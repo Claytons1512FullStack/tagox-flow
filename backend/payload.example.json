@@ -1,0 +1,8 @@
+{
+  "nome": "Paciente Exemplo",
+  "cpf": "00000000000",
+  "email": "paciente.exemplo@example.com",
+  "telefone": "00000000000",
+  "dataNascimento": "1990-01-01",
+  "observacoes": "Dados fictícios utilizados apenas como exemplo."
+}
