@@ -3,8 +3,8 @@ package com.tagox.flow;
 
 import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
-import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.tenant.TenantStatus;
+import com.tagox.flow.domain.tenant.TipoPessoa;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,7 +25,9 @@ class TenantPersistenceTest {
 
     @BeforeEach
     void limparBanco() {
+
         tenantRepository.deleteAll();
+
     }
 
 
@@ -36,9 +38,9 @@ class TenantPersistenceTest {
         Tenant tenant = new Tenant(
                 UUID.randomUUID(),
                 TipoPessoa.JURIDICA,
+                "12345678000199",
                 "Empresa Teste LTDA",
                 "Empresa Teste",
-                "12345678000199",
                 "empresa-teste",
                 TenantStatus.TRIAL,
                 null,
@@ -53,9 +55,31 @@ class TenantPersistenceTest {
                 .isNotNull();
 
 
+        assertThat(salvo.getDocumento())
+                .isEqualTo("12345678000199");
+
+
+        assertThat(salvo.getNome())
+                .isEqualTo("Empresa Teste LTDA");
+
+
+        assertThat(salvo.getNomeFantasia())
+                .isEqualTo("Empresa Teste");
+
+
+        assertThat(salvo.getSlug())
+                .isEqualTo("empresa-teste");
+
+
+        assertThat(salvo.getStatus())
+                .isEqualTo(TenantStatus.TRIAL);
+
+
         assertThat(
                 tenantRepository.findById(salvo.getId())
         )
                 .isPresent();
+
     }
 }
+
