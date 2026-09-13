@@ -4,6 +4,7 @@ import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantService;
 import com.tagox.flow.dto.tenant.TenantRequestDTO;
 import com.tagox.flow.dto.tenant.TenantResponseDTO;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 public class TenantController {
 
     private final TenantService tenantService;
+
 
     public TenantController(TenantService tenantService) {
         this.tenantService = tenantService;
@@ -24,15 +26,23 @@ public class TenantController {
     ) {
 
         Tenant tenant = tenantService.criar(
-                request.getTipoPessoa(),
-                request.getDocumento(),
-                request.getNome(),
-                request.getNomeFantasia(),
-                request.getSlug()
+                request.tipoPessoa(),
+                request.documento(),
+                request.nome(),
+                request.nomeFantasia(),
+                request.slug()
         );
 
-        return ResponseEntity.ok(
-                TenantResponseDTO.from(tenant)
+
+        TenantResponseDTO response = new TenantResponseDTO(
+                tenant.getId(),
+                tenant.getNome(),
+                tenant.getNomeFantasia(),
+                tenant.getSlug(),
+                tenant.getStatus().name()
         );
+
+
+        return ResponseEntity.ok(response);
     }
 }

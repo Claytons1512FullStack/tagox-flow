@@ -2,9 +2,12 @@ package com.tagox.flow.domain.tenant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
@@ -18,33 +21,55 @@ public class Tenant {
     private UUID id;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "tipo_pessoa", nullable = false, length = 20)
+    @Column(name = "tipo_pessoa", nullable = false)
     private TipoPessoa tipoPessoa;
 
-    @Column(name = "documento", nullable = false, unique = true, length = 20)
+    @Column(nullable = false, unique = true, length = 20)
     private String documento;
 
-    @Column(name = "nome", nullable = false, length = 150)
+    @Column(nullable = false, length = 150)
     private String nome;
 
-    @Column(name = "nome_fantasia", length = 150)
+    @Column(name = "nome_fantasia", nullable = false, length = 150)
     private String nomeFantasia;
 
-    @Column(name = "slug", nullable = false, unique = true, length = 100)
+    @Column(nullable = false, unique = true, length = 100)
     private String slug;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 20)
+    @Column(nullable = false)
     private TenantStatus status;
 
-    @Column(name = "criado_em", nullable = false)
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
+
     protected Tenant() {
+        // Construtor protegido exigido pelo Hibernate
     }
+
+
+    public Tenant(
+            UUID id,
+            TipoPessoa tipoPessoa,
+            String documento,
+            String nome,
+            String nomeFantasia,
+            String slug,
+            TenantStatus status
+    ) {
+        this.id = id;
+        this.tipoPessoa = tipoPessoa;
+        this.documento = documento;
+        this.nome = nome;
+        this.nomeFantasia = nomeFantasia;
+        this.slug = slug;
+        this.status = status;
+    }
+
 
     public Tenant(
             UUID id,
@@ -67,6 +92,34 @@ public class Tenant {
         this.criadoEm = criadoEm;
         this.atualizadoEm = atualizadoEm;
     }
+
+
+    @PrePersist
+    private void antesDePersistir() {
+
+        Instant agora = Instant.now();
+
+        if (this.id == null) {
+            this.id = UUID.randomUUID();
+        }
+
+        if (this.criadoEm == null) {
+            this.criadoEm = agora;
+        }
+
+        if (this.atualizadoEm == null) {
+            this.atualizadoEm = agora;
+        }
+    }
+
+
+    @PreUpdate
+    private void antesDeAtualizar() {
+
+        this.atualizadoEm = Instant.now();
+
+    }
+
 
     public UUID getId() {
         return id;

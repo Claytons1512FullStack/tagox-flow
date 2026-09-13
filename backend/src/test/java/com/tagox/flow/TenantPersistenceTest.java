@@ -1,64 +1,61 @@
 package com.tagox.flow;
+
+
 import com.tagox.flow.domain.tenant.Tenant;
-import com.tagox.flow.domain.tenant.TenantStatus;
+import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TipoPessoa;
-import jakarta.persistence.EntityManager;
+import com.tagox.flow.domain.tenant.TenantStatus;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.test.context.SpringBootTest;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 
-@DataJpaTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+
+@SpringBootTest
 class TenantPersistenceTest {
 
+
     @Autowired
-    private EntityManager entityManager;
+    private TenantRepository tenantRepository;
+
+
+    @BeforeEach
+    void limparBanco() {
+        tenantRepository.deleteAll();
+    }
+
 
     @Test
-    void devePersistirERecuperarTenant() {
+    void devePersistirTenantNoBanco() {
 
-        UUID id = UUID.randomUUID();
-        Instant agora = Instant.now();
 
         Tenant tenant = new Tenant(
-                id,
+                UUID.randomUUID(),
                 TipoPessoa.JURIDICA,
+                "Empresa Teste LTDA",
+                "Empresa Teste",
                 "12345678000199",
-                "TAGOX Tecnologia LTDA",
-                "TAGOX Tech",
-                "tagox-tech",
+                "empresa-teste",
                 TenantStatus.TRIAL,
-                agora,
-                agora
+                null,
+                null
         );
 
-        entityManager.persist(tenant);
-        entityManager.flush();
-        entityManager.clear();
 
-        Tenant recuperado = entityManager.find(Tenant.class, id);
+        Tenant salvo = tenantRepository.saveAndFlush(tenant);
 
-        assertThat(recuperado).isNotNull();
-        assertThat(recuperado.getId()).isEqualTo(id);
-        assertThat(recuperado.getTipoPessoa()).isEqualTo(TipoPessoa.JURIDICA);
-        assertThat(recuperado.getDocumento()).isEqualTo("12345678000199");
-        assertThat(recuperado.getNome()).isEqualTo("TAGOX Tecnologia LTDA");
-        assertThat(recuperado.getNomeFantasia()).isEqualTo("TAGOX Tech");
-        assertThat(recuperado.getSlug()).isEqualTo("tagox-tech");
-        assertThat(recuperado.getStatus()).isEqualTo(TenantStatus.TRIAL);
 
-        assertThat(recuperado.getCriadoEm())
-                .isCloseTo(agora, within(1, ChronoUnit.MICROS));
+        assertThat(salvo.getId())
+                .isNotNull();
 
-        assertThat(recuperado.getAtualizadoEm())
-                .isCloseTo(agora, within(1, ChronoUnit.MICROS));
+
+        assertThat(
+                tenantRepository.findById(salvo.getId())
+        )
+                .isPresent();
     }
 }

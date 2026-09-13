@@ -4,6 +4,8 @@ import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.tenant.TipoPessoa;
+import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -14,12 +16,22 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+
+@Transactional
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class TenantRepositoryTest {
 
+
     @Autowired
     private TenantRepository tenantRepository;
+
+
+    @BeforeEach
+    void limparBanco() {
+        tenantRepository.deleteAll();
+    }
+
 
     @Test
     void deveVerificarExistenciaPorDocumentoESlug() {
@@ -27,7 +39,7 @@ class TenantRepositoryTest {
         Tenant tenant = new Tenant(
                 UUID.randomUUID(),
                 TipoPessoa.JURIDICA,
-                "12345678000199",
+                "99999999000199",
                 "TAGOX Tecnologia LTDA",
                 "TAGOX Tech",
                 "tagox-tech",
@@ -36,18 +48,31 @@ class TenantRepositoryTest {
                 Instant.now()
         );
 
+
         tenantRepository.saveAndFlush(tenant);
 
-        assertThat(tenantRepository.existsByDocumento("12345678000199"))
+
+        assertThat(
+                tenantRepository.existsByDocumento("99999999000199")
+        )
                 .isTrue();
 
-        assertThat(tenantRepository.existsBySlug("tagox-tech"))
+
+        assertThat(
+                tenantRepository.existsBySlug("tagox-tech")
+        )
                 .isTrue();
 
-        assertThat(tenantRepository.existsByDocumento("99999999999999"))
+
+        assertThat(
+                tenantRepository.existsByDocumento("99999999999999")
+        )
                 .isFalse();
 
-        assertThat(tenantRepository.existsBySlug("tenant-inexistente"))
+
+        assertThat(
+                tenantRepository.existsBySlug("tenant-inexistente")
+        )
                 .isFalse();
     }
 }
