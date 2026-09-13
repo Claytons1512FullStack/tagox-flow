@@ -1,0 +1,3 @@
+ALTER TABLE tenant
+    ALTER COLUMN criado_em TYPE TIMESTAMPTZ,
+    ALTER COLUMN atualizado_em TYPE TIMESTAMPTZ;
