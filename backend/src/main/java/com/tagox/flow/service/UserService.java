@@ -6,6 +6,7 @@ import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.dto.user.CreateUserRequest;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,19 @@ public class UserService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Tenant não encontrado")
                 );
+
+
+        boolean emailExiste = userRepository.existsByTenantIdAndEmail(
+                tenant.getId(),
+                request.getEmail()
+        );
+
+
+        if (emailExiste) {
+            throw new IllegalArgumentException(
+                    "Já existe um usuário com este email neste tenant"
+            );
+        }
 
 
         User user = new User(

@@ -1,6 +1,7 @@
 package com.tagox.flow;
 
 import com.tagox.flow.domain.tenant.TenantRepository;
+import com.tagox.flow.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,8 +23,12 @@ class TenantControllerTest {
     @Autowired
     private TenantRepository tenantRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @BeforeEach
     void limparBanco() {
+        userRepository.deleteAll();
         tenantRepository.deleteAll();
     }
 

@@ -91,4 +91,30 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.tenantId")
                         .value(tenant.getId().toString()));
     }
+    @Test
+    void deveFalharQuandoTenantNaoExiste() throws Exception {
+
+
+        String tenantInexistente = UUID.randomUUID().toString();
+
+
+        String json = """
+                {
+                    "tenantId": "%s",
+                    "nome": "Usuario Invalido",
+                    "email": "usuario@teste.com",
+                    "senhaHash": "hash-teste"
+                }
+                """.formatted(tenantInexistente);
+
+
+        mockMvc.perform(
+                        post("/api/users")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value("Tenant não encontrado"));
+    }
 }
