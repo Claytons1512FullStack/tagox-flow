@@ -32,7 +32,7 @@ public class UserService {
 
         Tenant tenant = tenantRepository.findById(request.getTenantId())
                 .orElseThrow(() ->
-                        new RuntimeException("Tenant não encontrado")
+                        new IllegalArgumentException("Tenant não encontrado")
                 );
 
 
