@@ -11,47 +11,127 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    // Trata validações de negócio (CPF/Email duplicados, paciente não encontrado)
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(IllegalArgumentException ex) {
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleResourceNotFound(
+            ResourceNotFoundException ex
+    ) {
+
         Map<String, Object> body = new HashMap<>();
+
         body.put("timestamp", LocalDateTime.now());
-        body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Requisição Inválida");
+        body.put("status", HttpStatus.NOT_FOUND.value());
+        body.put("error", "NOT_FOUND");
         body.put("message", ex.getMessage());
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(body);
     }
 
-    // Trata erros de validação das anotações (@NotBlank, @Email, @CPF, etc.)
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getFieldErrors().forEach(error ->
-                errors.put(error.getField(), error.getDefaultMessage())
-        );
+
+
+    @ExceptionHandler(DuplicateResourceException.class)
+    public ResponseEntity<Map<String, Object>> handleDuplicateResource(
+            DuplicateResourceException ex
+    ) {
 
         Map<String, Object> body = new HashMap<>();
+
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("error", "CONFLICT");
+        body.put("message", ex.getMessage());
+
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(body);
+    }
+
+
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<Map<String, Object>> handleBusinessException(
+            BusinessException ex
+    ) {
+
+        Map<String, Object> body = new HashMap<>();
+
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Erro de Validação");
+        body.put("error", "BUSINESS_ERROR");
+        body.put("message", ex.getMessage());
+
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(body);
+    }
+
+
+
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationExceptions(
+            MethodArgumentNotValidException ex
+    ) {
+
+
+        Map<String, String> errors = new HashMap<>();
+
+
+        ex.getBindingResult()
+                .getFieldErrors()
+                .forEach(error ->
+                        errors.put(
+                                error.getField(),
+                                error.getDefaultMessage()
+                        )
+                );
+
+
+        Map<String, Object> body = new HashMap<>();
+
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        body.put("error", "VALIDATION_ERROR");
         body.put("errors", errors);
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(body);
     }
 
-    // Trata erros de formato de JSON ou tipos de dados inválidos (ex: data mal formatada)
+
+
+
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(HttpMessageNotReadableException ex) {
+    public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
+            HttpMessageNotReadableException ex
+    ) {
+
+
         Map<String, Object> body = new HashMap<>();
+
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
-        body.put("error", "Formato de Requisição Inválido");
-        body.put("message", "O corpo da requisição contém dados mal formatados ou tipos inválidos.");
+        body.put("error", "INVALID_REQUEST");
+        body.put(
+                "message",
+                "O corpo da requisição contém dados mal formatados ou tipos inválidos."
+        );
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(body);
     }
+
 }

@@ -6,14 +6,18 @@ import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.dto.user.CreateUserRequest;
+import com.tagox.flow.exception.DuplicateResourceException;
+import com.tagox.flow.exception.ResourceNotFoundException;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
+
 @Service
 public class UserService {
+
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
@@ -28,38 +32,54 @@ public class UserService {
     }
 
 
-    @Transactional
-    public User criarUsuario(CreateUserRequest request) {
 
-        Tenant tenant = tenantRepository.findById(request.getTenantId())
+    @Transactional
+    public User criarUsuario(
+            CreateUserRequest request
+    ) {
+
+
+        Tenant tenant = tenantRepository.findById(
+                        request.getTenantId()
+                )
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Tenant não encontrado")
+                        new ResourceNotFoundException(
+                                "Tenant não encontrado"
+                        )
                 );
 
 
-        boolean emailExiste = userRepository.existsByTenantIdAndEmail(
+
+        String emailNormalizado = request.getEmail()
+                .toLowerCase();
+
+
+
+        if (userRepository.existsByTenantIdAndEmail(
                 tenant.getId(),
-                request.getEmail()
-        );
+                emailNormalizado
+        )) {
 
-
-        if (emailExiste) {
-            throw new IllegalArgumentException(
+            throw new DuplicateResourceException(
                     "Já existe um usuário com este email neste tenant"
             );
+
         }
+
 
 
         User user = new User(
                 UUID.randomUUID(),
                 tenant,
                 request.getNome(),
-                request.getEmail(),
+                emailNormalizado,
                 request.getSenhaHash(),
                 UserStatus.ATIVO
         );
 
 
         return userRepository.save(user);
+
     }
+
 }

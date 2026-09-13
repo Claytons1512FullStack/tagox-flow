@@ -2,9 +2,12 @@ package com.tagox.flow.controller;
 
 import com.tagox.flow.domain.user.User;
 import com.tagox.flow.dto.user.CreateUserRequest;
-import com.tagox.flow.dto.user.UserResponseDTO;
+import com.tagox.flow.dto.user.UserResponse;
 import com.tagox.flow.service.UserService;
 
+import jakarta.validation.Valid;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,23 +25,17 @@ public class UserController {
 
 
     @PostMapping
-    public ResponseEntity<UserResponseDTO> criar(
-            @RequestBody CreateUserRequest request
+    public ResponseEntity<UserResponse> criar(
+            @Valid @RequestBody CreateUserRequest request
     ) {
-
 
         User user = userService.criarUsuario(request);
 
 
-        UserResponseDTO response = new UserResponseDTO(
-                user.getId(),
-                user.getTenant().getId(),
-                user.getNome(),
-                user.getEmail(),
-                user.getStatus().name()
-        );
-
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        UserResponse.from(user)
+                );
     }
 }

@@ -26,15 +26,38 @@ public class CreateUserRequest {
         return tenantId;
     }
 
+
     public String getNome() {
         return nome;
     }
+
 
     public String getEmail() {
         return email;
     }
 
+
     public String getSenhaHash() {
         return senhaHash;
+    }
+
+
+    public void setTenantId(UUID tenantId) {
+        this.tenantId = tenantId;
+    }
+
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+
+    public void setSenhaHash(String senhaHash) {
+        this.senhaHash = senhaHash;
     }
 }

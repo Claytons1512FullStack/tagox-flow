@@ -5,8 +5,12 @@ import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantService;
 import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.tenant.TipoPessoa;
+import com.tagox.flow.exception.DuplicateResourceException;
+
 import jakarta.transaction.Transactional;
+
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
@@ -15,17 +19,22 @@ import org.springframework.context.annotation.Import;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional
 @Import(TenantService.class)
 class TenantServiceTest {
 
+
     @Autowired
     private TenantService tenantService;
 
+
     @Autowired
     private TenantRepository tenantRepository;
+
+
 
     @Test
     void deveCriarTenantComStatusTrial() {
@@ -38,22 +47,46 @@ class TenantServiceTest {
                 "tagox-flow"
         );
 
-        assertThat(tenant.getId()).isNotNull();
-        assertThat(tenant.getTipoPessoa()).isEqualTo(TipoPessoa.JURIDICA);
-        assertThat(tenant.getDocumento()).isEqualTo("98765432000188");
-        assertThat(tenant.getNome()).isEqualTo("TAGOX Flow Tecnologia LTDA");
-        assertThat(tenant.getNomeFantasia()).isEqualTo("TAGOX Flow");
-        assertThat(tenant.getSlug()).isEqualTo("tagox-flow");
-        assertThat(tenant.getStatus()).isEqualTo(TenantStatus.TRIAL);
-        assertThat(tenant.getCriadoEm()).isNotNull();
-        assertThat(tenant.getAtualizadoEm()).isNotNull();
 
-        assertThat(tenantRepository.findById(tenant.getId()))
+        assertThat(tenant.getId())
+                .isNotNull();
+
+        assertThat(tenant.getTipoPessoa())
+                .isEqualTo(TipoPessoa.JURIDICA);
+
+        assertThat(tenant.getDocumento())
+                .isEqualTo("98765432000188");
+
+        assertThat(tenant.getNome())
+                .isEqualTo("TAGOX Flow Tecnologia LTDA");
+
+        assertThat(tenant.getNomeFantasia())
+                .isEqualTo("TAGOX Flow");
+
+        assertThat(tenant.getSlug())
+                .isEqualTo("tagox-flow");
+
+        assertThat(tenant.getStatus())
+                .isEqualTo(TenantStatus.TRIAL);
+
+        assertThat(tenant.getCriadoEm())
+                .isNotNull();
+
+        assertThat(tenant.getAtualizadoEm())
+                .isNotNull();
+
+
+        assertThat(
+                tenantRepository.findById(tenant.getId())
+        )
                 .isPresent();
     }
 
+
+
     @Test
     void naoDevePermitirDocumentoDuplicado() {
+
 
         tenantService.criar(
                 TipoPessoa.JURIDICA,
@@ -62,6 +95,7 @@ class TenantServiceTest {
                 "Primeiro",
                 "primeiro-tenant"
         );
+
 
         assertThatThrownBy(() ->
                 tenantService.criar(
@@ -72,12 +106,15 @@ class TenantServiceTest {
                         "segundo-tenant"
                 )
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DuplicateResourceException.class)
                 .hasMessage("Documento já cadastrado.");
     }
 
+
+
     @Test
     void naoDevePermitirSlugDuplicado() {
+
 
         tenantService.criar(
                 TipoPessoa.JURIDICA,
@@ -86,6 +123,7 @@ class TenantServiceTest {
                 "Primeiro",
                 "slug-existente"
         );
+
 
         assertThatThrownBy(() ->
                 tenantService.criar(
@@ -96,7 +134,8 @@ class TenantServiceTest {
                         "slug-existente"
                 )
         )
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(DuplicateResourceException.class)
                 .hasMessage("Slug já cadastrado.");
     }
+
 }

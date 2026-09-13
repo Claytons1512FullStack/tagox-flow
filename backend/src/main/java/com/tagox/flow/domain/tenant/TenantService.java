@@ -1,19 +1,26 @@
 package com.tagox.flow.domain.tenant;
 
+import com.tagox.flow.exception.DuplicateResourceException;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
 
+
 @Service
 public class TenantService {
 
+
     private final TenantRepository tenantRepository;
+
 
     public TenantService(TenantRepository tenantRepository) {
         this.tenantRepository = tenantRepository;
     }
+
+
 
     @Transactional
     public Tenant criar(
@@ -23,15 +30,31 @@ public class TenantService {
             String nomeFantasia,
             String slug
     ) {
+
+
         if (tenantRepository.existsByDocumento(documento)) {
-            throw new IllegalArgumentException("Documento já cadastrado.");
+
+            throw new DuplicateResourceException(
+                    "Documento já cadastrado."
+            );
+
         }
+
+
 
         if (tenantRepository.existsBySlug(slug)) {
-            throw new IllegalArgumentException("Slug já cadastrado.");
+
+            throw new DuplicateResourceException(
+                    "Slug já cadastrado."
+            );
+
         }
 
+
+
         Instant agora = Instant.now();
+
+
 
         Tenant tenant = new Tenant(
                 UUID.randomUUID(),
@@ -45,6 +68,9 @@ public class TenantService {
                 agora
         );
 
+
         return tenantRepository.save(tenant);
+
     }
+
 }
