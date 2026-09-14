@@ -30,7 +30,7 @@ public class Tenant {
     @Column(nullable = false, length = 150)
     private String nome;
 
-    @Column(name = "nome_fantasia", nullable = false, length = 150)
+    @Column(name = "nome_fantasia", length = 150)
     private String nomeFantasia;
 
     @Column(nullable = false, unique = true, length = 100)
@@ -50,6 +50,23 @@ public class Tenant {
     protected Tenant() {
         // Construtor protegido exigido pelo Hibernate
     }
+
+    public Tenant(
+            TipoPessoa tipoPessoa,
+            String documento,
+            String nome,
+            String nomeFantasia,
+            String slug,
+            TenantStatus status
+    ) {
+        this.tipoPessoa = tipoPessoa;
+        this.documento = documento;
+        this.nome = nome;
+        this.nomeFantasia = nomeFantasia;
+        this.slug = slug;
+        this.status = status;
+    }
+
 
 
     public Tenant(

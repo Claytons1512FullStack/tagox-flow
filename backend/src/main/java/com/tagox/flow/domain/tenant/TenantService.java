@@ -5,8 +5,6 @@ import com.tagox.flow.exception.DuplicateResourceException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.util.UUID;
 
 
 @Service
@@ -30,9 +28,12 @@ public class TenantService {
             String nomeFantasia,
             String slug
     ) {
+        Documento documentoNormalizado = Documento.criar(tipoPessoa, documento);
+        String valorDocumento = documentoNormalizado.getValor();
 
 
-        if (tenantRepository.existsByDocumento(documento)) {
+
+        if (tenantRepository.existsByDocumento(valorDocumento)) {
 
             throw new DuplicateResourceException(
                     "Documento já cadastrado."
@@ -52,20 +53,13 @@ public class TenantService {
 
 
 
-        Instant agora = Instant.now();
-
-
-
         Tenant tenant = new Tenant(
-                UUID.randomUUID(),
                 tipoPessoa,
-                documento,
+                valorDocumento,
                 nome,
                 nomeFantasia,
                 slug,
-                TenantStatus.TRIAL,
-                agora,
-                agora
+                TenantStatus.TRIAL
         );
 
 

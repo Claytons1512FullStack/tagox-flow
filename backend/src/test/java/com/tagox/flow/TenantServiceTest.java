@@ -37,11 +37,35 @@ class TenantServiceTest {
 
 
     @Test
+    void deveConsiderarDocumentoFormatadoEnaoFormatadoComoDuplicado() {
+
+        tenantService.criar(
+                TipoPessoa.JURIDICA,
+                "11.222.333/0001-81",
+                "Primeiro Tenant",
+                "Primeiro",
+                "documento-formatado"
+        );
+
+        assertThatThrownBy(() ->
+                tenantService.criar(
+                        TipoPessoa.JURIDICA,
+                        "11222333000181",
+                        "Segundo Tenant",
+                        "Segundo",
+                        "documento-sem-formatacao"
+                )
+        )
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessage("Documento já cadastrado.");
+    }
+
+    @Test
     void deveCriarTenantComStatusTrial() {
 
         Tenant tenant = tenantService.criar(
                 TipoPessoa.JURIDICA,
-                "98765432000188",
+                "12345678000195",
                 "TAGOX Flow Tecnologia LTDA",
                 "TAGOX Flow",
                 "tagox-flow"
@@ -55,7 +79,7 @@ class TenantServiceTest {
                 .isEqualTo(TipoPessoa.JURIDICA);
 
         assertThat(tenant.getDocumento())
-                .isEqualTo("98765432000188");
+                .isEqualTo("12345678000195");
 
         assertThat(tenant.getNome())
                 .isEqualTo("TAGOX Flow Tecnologia LTDA");
@@ -90,7 +114,7 @@ class TenantServiceTest {
 
         tenantService.criar(
                 TipoPessoa.JURIDICA,
-                "11111111000111",
+                "11222333000181",
                 "Primeiro Tenant",
                 "Primeiro",
                 "primeiro-tenant"
@@ -100,7 +124,7 @@ class TenantServiceTest {
         assertThatThrownBy(() ->
                 tenantService.criar(
                         TipoPessoa.JURIDICA,
-                        "11111111000111",
+                        "11222333000181",
                         "Segundo Tenant",
                         "Segundo",
                         "segundo-tenant"
@@ -118,7 +142,7 @@ class TenantServiceTest {
 
         tenantService.criar(
                 TipoPessoa.JURIDICA,
-                "22222222000122",
+                "04252011000110",
                 "Primeiro Tenant",
                 "Primeiro",
                 "slug-existente"
@@ -128,7 +152,7 @@ class TenantServiceTest {
         assertThatThrownBy(() ->
                 tenantService.criar(
                         TipoPessoa.JURIDICA,
-                        "33333333000133",
+                        "04252011000209",
                         "Segundo Tenant",
                         "Segundo",
                         "slug-existente"

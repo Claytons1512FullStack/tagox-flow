@@ -39,7 +39,7 @@ class TenantControllerTest {
         String json = """
                 {
                     "tipoPessoa": "JURIDICA",
-                    "documento": "11111111000111",
+                    "documento": "11222333000181",
                     "nome": "TAGOX Flow Tecnologia LTDA",
                     "nomeFantasia": "TAGOX Flow",
                     "slug": "tagox-flow-api"
