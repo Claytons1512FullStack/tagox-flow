@@ -75,7 +75,7 @@ class UserControllerTest {
                     "tenantId": "%s",
                     "nome": "Clayton Usuario",
                     "email": "clayton@teste.com",
-                    "senhaHash": "hash-teste"
+                    "senha": "senha-teste"
                 }
                 """.formatted(tenant.getId());
 
@@ -109,7 +109,7 @@ class UserControllerTest {
                     "tenantId": "%s",
                     "nome": "Primeiro Usuario",
                     "email": "usuario@teste.com",
-                    "senhaHash": "hash-teste"
+                    "senha": "senha-teste"
                 }
                 """.formatted(tenant.getId());
 
@@ -152,7 +152,7 @@ class UserControllerTest {
                     "tenantId": "%s",
                     "nome": "Usuario Invalido",
                     "email": "usuario@teste.com",
-                    "senhaHash": "hash-teste"
+                    "senha": "senha-teste"
                 }
                 """.formatted(tenantInexistente);
 

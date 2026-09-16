@@ -19,7 +19,7 @@ public class CreateUserRequest {
     private String email;
 
     @NotBlank
-    private String senhaHash;
+    private String senha;
 
 
     public UUID getTenantId() {
@@ -37,8 +37,8 @@ public class CreateUserRequest {
     }
 
 
-    public String getSenhaHash() {
-        return senhaHash;
+    public String getSenha() {
+    return senha;
     }
 
 
@@ -56,8 +56,8 @@ public class CreateUserRequest {
         this.email = email;
     }
 
-
-    public void setSenhaHash(String senhaHash) {
-        this.senhaHash = senhaHash;
-    }
+    public void setSenha(String senha) {
+    this.senha = senha;
+}
+    
 }

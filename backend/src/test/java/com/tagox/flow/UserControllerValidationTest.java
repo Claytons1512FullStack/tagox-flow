@@ -33,7 +33,7 @@ class UserControllerValidationTest {
 
         request.setTenantId(UUID.randomUUID());
         request.setEmail("teste@email.com");
-        request.setSenhaHash("hash");
+        request.setSenha("hash");
 
 
         Set<ConstraintViolation<CreateUserRequest>> violations =
@@ -66,7 +66,7 @@ class UserControllerValidationTest {
         request.setTenantId(UUID.randomUUID());
         request.setNome("João");
         request.setEmail("email-invalido");
-        request.setSenhaHash("hash");
+        request.setSenha("hash");
 
 
         Set<ConstraintViolation<CreateUserRequest>> violations =
@@ -98,7 +98,7 @@ class UserControllerValidationTest {
 
         request.setNome("João");
         request.setEmail("joao@email.com");
-        request.setSenhaHash("hash");
+        request.setSenha("hash");
 
 
         Set<ConstraintViolation<CreateUserRequest>> violations =
