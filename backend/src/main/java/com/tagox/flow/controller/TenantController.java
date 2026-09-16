@@ -5,6 +5,8 @@ import com.tagox.flow.domain.tenant.TenantService;
 import com.tagox.flow.dto.tenant.TenantRequestDTO;
 import com.tagox.flow.dto.tenant.TenantResponseDTO;
 
+import jakarta.validation.Valid;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,15 +16,13 @@ public class TenantController {
 
     private final TenantService tenantService;
 
-
     public TenantController(TenantService tenantService) {
         this.tenantService = tenantService;
     }
 
-
     @PostMapping
     public ResponseEntity<TenantResponseDTO> criar(
-            @RequestBody TenantRequestDTO request
+            @Valid @RequestBody TenantRequestDTO request
     ) {
 
         Tenant tenant = tenantService.criar(
@@ -33,7 +33,6 @@ public class TenantController {
                 request.slug()
         );
 
-
         TenantResponseDTO response = new TenantResponseDTO(
                 tenant.getId(),
                 tenant.getNome(),
@@ -41,7 +40,6 @@ public class TenantController {
                 tenant.getSlug(),
                 tenant.getStatus().name()
         );
-
 
         return ResponseEntity.ok(response);
     }

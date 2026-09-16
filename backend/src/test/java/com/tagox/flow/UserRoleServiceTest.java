@@ -11,6 +11,8 @@ import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.domain.userrole.UserRole;
 import com.tagox.flow.domain.userrole.UserRoleRepository;
+import com.tagox.flow.exception.DuplicateResourceException;
+import com.tagox.flow.exception.ResourceNotFoundException;
 import com.tagox.flow.service.UserRoleService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -23,43 +25,30 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-
 class UserRoleServiceTest {
-
 
     private UserRepository userRepository;
     private RoleRepository roleRepository;
     private UserRoleRepository userRoleRepository;
-
     private UserRoleService service;
-
 
     @BeforeEach
     void setup() {
-
         userRepository = mock(UserRepository.class);
         roleRepository = mock(RoleRepository.class);
         userRoleRepository = mock(UserRoleRepository.class);
-
 
         service = new UserRoleService(
                 userRepository,
                 roleRepository,
                 userRoleRepository
         );
-
     }
-
-
 
     @Test
     void deveAdicionarRoleAoUsuario() {
-
-
         UUID userId = UUID.randomUUID();
         UUID roleId = UUID.randomUUID();
-
-
 
         Tenant tenant = new Tenant(
                 UUID.randomUUID(),
@@ -71,7 +60,86 @@ class UserRoleServiceTest {
                 TenantStatus.ATIVO
         );
 
+        User user = new User(
+                userId,
+                tenant,
+                "Clayton",
+                "clayton@test.com",
+                "hash",
+                UserStatus.ATIVO
+        );
 
+        Role role = new Role(
+                roleId,
+                RoleType.ADMIN,
+                "Administrador"
+        );
+
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
+
+        when(roleRepository.findByTipo(RoleType.ADMIN))
+                .thenReturn(Optional.of(role));
+
+        when(userRoleRepository.existsByIdUsuarioIdAndIdRoleId(
+                userId,
+                roleId
+        ))
+                .thenReturn(false);
+
+        when(userRoleRepository.save(any(UserRole.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserRole resultado = service.adicionarRole(
+                userId,
+                RoleType.ADMIN
+        );
+
+        assertNotNull(resultado);
+        assertEquals(user, resultado.getUsuario());
+        assertEquals(role, resultado.getRole());
+
+        verify(userRoleRepository)
+                .save(any(UserRole.class));
+    }
+
+    @Test
+    void deveFalharQuandoUsuarioNaoExiste() {
+        UUID userId = UUID.randomUUID();
+
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.adicionarRole(userId, RoleType.ADMIN)
+        );
+
+        assertEquals(
+                "Usuário não encontrado",
+                exception.getMessage()
+        );
+
+        verify(roleRepository, never())
+                .findByTipo(any());
+
+        verify(userRoleRepository, never())
+                .save(any(UserRole.class));
+    }
+
+    @Test
+    void deveFalharQuandoRoleNaoExiste() {
+        UUID userId = UUID.randomUUID();
+
+        Tenant tenant = new Tenant(
+                UUID.randomUUID(),
+                TipoPessoa.JURIDICA,
+                "123456789",
+                "Empresa Teste",
+                "Empresa Teste",
+                "empresa-teste",
+                TenantStatus.ATIVO
+        );
 
         User user = new User(
                 userId,
@@ -82,7 +150,52 @@ class UserRoleServiceTest {
                 UserStatus.ATIVO
         );
 
+        when(userRepository.findById(userId))
+                .thenReturn(Optional.of(user));
 
+        when(roleRepository.findByTipo(RoleType.ADMIN))
+                .thenReturn(Optional.empty());
+
+        ResourceNotFoundException exception = assertThrows(
+                ResourceNotFoundException.class,
+                () -> service.adicionarRole(userId, RoleType.ADMIN)
+        );
+
+        assertEquals(
+                "Role não encontrada",
+                exception.getMessage()
+        );
+
+        verify(userRoleRepository, never())
+                .existsByIdUsuarioIdAndIdRoleId(any(), any());
+
+        verify(userRoleRepository, never())
+                .save(any(UserRole.class));
+    }
+
+    @Test
+    void deveFalharQuandoRoleJaExiste() {
+        UUID userId = UUID.randomUUID();
+        UUID roleId = UUID.randomUUID();
+
+        Tenant tenant = new Tenant(
+                UUID.randomUUID(),
+                TipoPessoa.JURIDICA,
+                "123456789",
+                "Empresa Teste",
+                "Empresa Teste",
+                "empresa-teste",
+                TenantStatus.ATIVO
+        );
+
+        User user = new User(
+                userId,
+                tenant,
+                "Clayton",
+                "clayton@test.com",
+                "hash",
+                UserStatus.ATIVO
+        );
 
         Role role = new Role(
                 roleId,
@@ -90,49 +203,29 @@ class UserRoleServiceTest {
                 "Administrador"
         );
 
-
-
         when(userRepository.findById(userId))
                 .thenReturn(Optional.of(user));
 
-
-
         when(roleRepository.findByTipo(RoleType.ADMIN))
                 .thenReturn(Optional.of(role));
-
-
 
         when(userRoleRepository.existsByIdUsuarioIdAndIdRoleId(
                 userId,
                 roleId
         ))
-                .thenReturn(false);
+                .thenReturn(true);
 
-
-
-        when(userRoleRepository.save(any(UserRole.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-
-
-        UserRole resultado = service.adicionarRole(
-                userId,
-                RoleType.ADMIN
+        DuplicateResourceException exception = assertThrows(
+                DuplicateResourceException.class,
+                () -> service.adicionarRole(userId, RoleType.ADMIN)
         );
 
+        assertEquals(
+                "Usuário já possui esta role",
+                exception.getMessage()
+        );
 
-
-        assertNotNull(resultado);
-
-        assertEquals(user, resultado.getUsuario());
-
-        assertEquals(role, resultado.getRole());
-
-
-
-        verify(userRoleRepository)
+        verify(userRoleRepository, never())
                 .save(any(UserRole.class));
-
     }
-
 }

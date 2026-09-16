@@ -1,23 +1,26 @@
 package com.tagox.flow;
 
 import com.tagox.flow.domain.tenant.Tenant;
+import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.user.User;
-import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.domain.user.UserRepository;
-import com.tagox.flow.domain.tenant.TenantRepository;
+import com.tagox.flow.domain.user.UserStatus;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 @SpringBootTest
+@ActiveProfiles("test")
 public class UserTenantIsolationTest {
 
 
@@ -28,7 +31,11 @@ public class UserTenantIsolationTest {
     @Autowired
     private TenantRepository tenantRepository;
 
-
+    @BeforeEach
+    void prepararBanco() {
+        userRepository.deleteAll();
+        tenantRepository.deleteAll();
+    }
 
     @Test
     void devePermitirMesmoEmailEmTenantsDiferentes() {
