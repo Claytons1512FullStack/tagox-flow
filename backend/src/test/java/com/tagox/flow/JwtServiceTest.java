@@ -64,10 +64,15 @@ class JwtServiceTest {
                 tenantId
         );
 
-        String tokenAlterado = token.substring(
-                0,
-                token.length() - 1
-        ) + "x";
+        String[] partes = token.split("\\.");
+
+        String assinaturaAlterada =
+                partes[2].substring(0, 10)
+                        + (partes[2].charAt(10) == 'a' ? 'b' : 'a')
+                        + partes[2].substring(11);
+
+        String tokenAlterado =
+                partes[0] + "." + partes[1] + "." + assinaturaAlterada;
 
         assertThrows(
                 RuntimeException.class,
