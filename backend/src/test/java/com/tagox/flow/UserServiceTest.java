@@ -15,12 +15,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("test")
 class UserServiceTest {
 
     @Autowired
@@ -76,5 +78,21 @@ class UserServiceTest {
                 "senha-secreta",
                 salvo.getSenhaHash()
         )).isTrue();
+    }
+
+    @Test
+    void deveNormalizarEmailParaMinusculo() {
+
+        CreateUserRequest request = new CreateUserRequest();
+
+        request.setTenantId(tenant.getId());
+        request.setNome("Usuario Email");
+        request.setEmail("USUARIO@TESTE.COM");
+        request.setSenha("senha-secreta");
+
+        User salvo = userService.criarUsuario(request);
+
+        assertThat(salvo.getEmail())
+                .isEqualTo("usuario@teste.com");
     }
 }
