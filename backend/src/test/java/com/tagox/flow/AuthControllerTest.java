@@ -177,12 +177,13 @@ class AuthControllerTest {
 
         CreateUserRequest request = new CreateUserRequest();
 
-        request.setTenantId(tenant.getId());
         request.setNome("Usuario Login");
         request.setEmail("login@teste.com");
         request.setSenha("senha-login");
 
-        usuario = userService.criarUsuario(request);
+        usuario = userService.criarUsuario(
+                request,
+                tenant.getId()
+        );
     }
 }
-

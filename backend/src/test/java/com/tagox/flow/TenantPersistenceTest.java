@@ -8,6 +8,7 @@ import com.tagox.flow.domain.tenant.TipoPessoa;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.UUID;
@@ -15,6 +16,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 
+@ActiveProfiles("test")
 @SpringBootTest
 class TenantPersistenceTest {
 

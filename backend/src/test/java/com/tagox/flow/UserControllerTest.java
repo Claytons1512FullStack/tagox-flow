@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+@ActiveProfiles("test")
 @SpringBootTest
 @AutoConfigureMockMvc
 class UserControllerTest {
@@ -71,12 +73,11 @@ class UserControllerTest {
 
         String json = """
                 {
-                    "tenantId": "%s",
                     "nome": "Clayton Usuario",
                     "email": "clayton@teste.com",
                     "senha": "senha-teste"
                 }
-                """.formatted(tenant.getId());
+                """;
 
         mockMvc.perform(
                         post("/api/users")
@@ -103,12 +104,11 @@ class UserControllerTest {
 
         String json = """
                 {
-                    "tenantId": "%s",
                     "nome": "Primeiro Usuario",
                     "email": "usuario@teste.com",
                     "senha": "senha-teste"
                 }
-                """.formatted(tenant.getId());
+                """;
 
         mockMvc.perform(
                         post("/api/users")
@@ -140,22 +140,26 @@ class UserControllerTest {
     @Test
     void deveFalharQuandoTenantNaoExiste() throws Exception {
 
-        String tenantInexistente = UUID.randomUUID().toString();
+        UUID tenantInexistente = UUID.randomUUID();
+
+        String tokenTenantInexistente = jwtService.gerarToken(
+                UUID.randomUUID(),
+                tenantInexistente
+        );
 
         String json = """
                 {
-                    "tenantId": "%s",
                     "nome": "Usuario Invalido",
                     "email": "usuario@teste.com",
                     "senha": "senha-teste"
                 }
-                """.formatted(tenantInexistente);
+                """;
 
         mockMvc.perform(
                         post("/api/users")
                                 .header(
                                         "Authorization",
-                                        "Bearer " + token
+                                        "Bearer " + tokenTenantInexistente
                                 )
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(json)

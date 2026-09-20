@@ -15,26 +15,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-
+@ActiveProfiles("test")
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Transactional
 @Import(TenantService.class)
 class TenantServiceTest {
 
-
     @Autowired
     private TenantService tenantService;
 
-
     @Autowired
     private TenantRepository tenantRepository;
-
-
 
     @Test
     void deveConsiderarDocumentoFormatadoEnaoFormatadoComoDuplicado() {
@@ -71,7 +68,6 @@ class TenantServiceTest {
                 "tagox-flow"
         );
 
-
         assertThat(tenant.getId())
                 .isNotNull();
 
@@ -99,18 +95,14 @@ class TenantServiceTest {
         assertThat(tenant.getAtualizadoEm())
                 .isNotNull();
 
-
         assertThat(
                 tenantRepository.findById(tenant.getId())
         )
                 .isPresent();
     }
 
-
-
     @Test
     void naoDevePermitirDocumentoDuplicado() {
-
 
         tenantService.criar(
                 TipoPessoa.JURIDICA,
@@ -119,7 +111,6 @@ class TenantServiceTest {
                 "Primeiro",
                 "primeiro-tenant"
         );
-
 
         assertThatThrownBy(() ->
                 tenantService.criar(
@@ -134,11 +125,8 @@ class TenantServiceTest {
                 .hasMessage("Documento já cadastrado.");
     }
 
-
-
     @Test
     void naoDevePermitirSlugDuplicado() {
-
 
         tenantService.criar(
                 TipoPessoa.JURIDICA,
@@ -147,7 +135,6 @@ class TenantServiceTest {
                 "Primeiro",
                 "slug-existente"
         );
-
 
         assertThatThrownBy(() ->
                 tenantService.criar(
@@ -161,5 +148,4 @@ class TenantServiceTest {
                 .isInstanceOf(DuplicateResourceException.class)
                 .hasMessage("Slug já cadastrado.");
     }
-
 }

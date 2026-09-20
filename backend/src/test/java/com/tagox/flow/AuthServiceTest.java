@@ -199,12 +199,14 @@ class AuthServiceTest {
 
         CreateUserRequest requestUsuarioB = new CreateUserRequest();
 
-        requestUsuarioB.setTenantId(outroTenant.getId());
         requestUsuarioB.setNome("Usuario Empresa B");
         requestUsuarioB.setEmail("mesmo@email.com");
         requestUsuarioB.setSenha("senha-b");
 
-        User usuarioB = userService.criarUsuario(requestUsuarioB);
+        User usuarioB = userService.criarUsuario(
+                requestUsuarioB,
+                outroTenant.getId()
+        );
 
         LoginRequest loginEmpresaA = new LoginRequest();
 
@@ -245,11 +247,13 @@ class AuthServiceTest {
 
         CreateUserRequest request = new CreateUserRequest();
 
-        request.setTenantId(tenant.getId());
         request.setNome(nome);
         request.setEmail(email);
         request.setSenha(senha);
 
-        return userService.criarUsuario(request);
+        return userService.criarUsuario(
+                request,
+                tenant.getId()
+        );
     }
 }

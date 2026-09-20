@@ -34,11 +34,12 @@ public class UserService {
 
     @Transactional
     public User criarUsuario(
-            CreateUserRequest request
+            CreateUserRequest request,
+            UUID tenantId
     ) {
 
         Tenant tenant = tenantRepository.findById(
-                request.getTenantId()
+                tenantId
         ).orElseThrow(() ->
                 new ResourceNotFoundException(
                         "Tenant não encontrado"

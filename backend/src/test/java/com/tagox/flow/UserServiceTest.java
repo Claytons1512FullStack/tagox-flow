@@ -63,12 +63,14 @@ class UserServiceTest {
 
         CreateUserRequest request = new CreateUserRequest();
 
-        request.setTenantId(tenant.getId());
         request.setNome("Usuario Service");
         request.setEmail("service@teste.com");
         request.setSenha("senha-secreta");
 
-        User salvo = userService.criarUsuario(request);
+        User salvo = userService.criarUsuario(
+                request,
+                tenant.getId()
+        );
 
         assertThat(salvo.getSenhaHash())
                 .isNotNull()
@@ -85,12 +87,14 @@ class UserServiceTest {
 
         CreateUserRequest request = new CreateUserRequest();
 
-        request.setTenantId(tenant.getId());
         request.setNome("Usuario Email");
         request.setEmail("USUARIO@TESTE.COM");
         request.setSenha("senha-secreta");
 
-        User salvo = userService.criarUsuario(request);
+        User salvo = userService.criarUsuario(
+                request,
+                tenant.getId()
+        );
 
         assertThat(salvo.getEmail())
                 .isEqualTo("usuario@teste.com");

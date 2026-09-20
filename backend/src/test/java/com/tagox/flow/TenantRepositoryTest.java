@@ -4,6 +4,8 @@ import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.tenant.TipoPessoa;
+import com.tagox.flow.domain.user.UserRepository;
+import com.tagox.flow.domain.userrole.UserRoleRepository;
 import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,12 +27,19 @@ class TenantRepositoryTest {
 
     @Autowired
     private TenantRepository tenantRepository;
+@Autowired
+private UserRepository userRepository;
+
+@Autowired
+private UserRoleRepository userRoleRepository;
 
 
-    @BeforeEach
-    void limparBanco() {
-        tenantRepository.deleteAll();
-    }
+@BeforeEach
+void limparBanco() {
+    userRoleRepository.deleteAll();
+    userRepository.deleteAll();
+    tenantRepository.deleteAll();
+}
 
 
     @Test
