@@ -93,6 +93,47 @@ class AuthServiceTest {
     }
 
     @Test
+    void deveAutenticarUsuarioDeTenantEmTrial() {
+
+        tenantRepository.deleteAll();
+
+        tenant = new Tenant(
+                UUID.randomUUID(),
+                TipoPessoa.JURIDICA,
+                "88888888000188",
+                "Empresa Trial",
+                "Empresa Trial",
+                "empresa-trial",
+                TenantStatus.TRIAL
+        );
+
+        tenantRepository.save(tenant);
+
+        User usuario = criarUsuario(
+                "Usuario Trial",
+                "trial@teste.com",
+                "senha-trial"
+        );
+
+        LoginRequest request = new LoginRequest();
+
+        request.setTenantSlug("empresa-trial");
+        request.setEmail("trial@teste.com");
+        request.setSenha("senha-trial");
+
+        String token = authService.autenticar(request);
+
+        assertThat(token).isNotNull();
+        assertThat(token).isNotBlank();
+
+        assertThat(jwtService.extrairUserId(token))
+                .isEqualTo(usuario.getId());
+
+        assertThat(jwtService.extrairTenantId(token))
+                .isEqualTo(tenant.getId());
+    }
+
+    @Test
     void deveRejeitarSenhaIncorreta() {
 
         criarUsuario(

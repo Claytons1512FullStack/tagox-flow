@@ -44,7 +44,8 @@ public class AuthService {
                 )
         );
 
-        if (tenant.getStatus() != TenantStatus.ATIVO) {
+        if (tenant.getStatus() == TenantStatus.SUSPENSO
+                || tenant.getStatus() == TenantStatus.CANCELADO) {
             throw new ResourceNotFoundException(
                     "Tenant não está disponível para autenticação"
             );

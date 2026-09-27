@@ -1366,7 +1366,7 @@ Neste momento:
 
 Última execução da suíte:
 
-Tests run: 48
+Tests run: 49
 Failures: 0
 Errors: 0
 Skipped: 0
@@ -1387,29 +1387,33 @@ O commit foi publicado no GitHub.
 
 A próxima atividade oficial é:
 
-Etapa 10.1.2 — Validar o comportamento de autenticação do Tenant em TRIAL.
+Etapa 10.1.3 — Primeiro ADMIN.
 
 A sequência planejada é:
 
-Validar TRIAL no AuthService
-↓
-Criar/ajustar testes de autenticação
-↓
-Validar login de Tenant TRIAL
-↓
 Modelar DTOs do onboarding
 ↓
 Implementar OnboardingService
 ↓
 Implementar POST /api/onboarding
 ↓
-Criar Tenant + primeiro User ADMIN em transação única
+Criar Tenant com status TRIAL
+↓
+Criar primeiro User com status ATIVO
+↓
+Atribuir role ADMIN
+↓
+Criar UserRole
+↓
+Garantir transação única
 ↓
 Testar rollback
 ↓
-Testar isolamento e autorização
+Testar isolamento entre Tenants
 ↓
-Validar fluxo completo
+Testar autorização do primeiro ADMIN
+↓
+Validar fluxo completo de onboarding
 ↓
 Atualizar documentação
 ↓
@@ -1423,7 +1427,18 @@ Etapa 11
 
 A V6 já foi criada e publicada.
 
-Não serão alteradas as migrations V1–V6.
+As migrations V1–V6 permanecem imutáveis.
+
+Qualquer nova alteração de banco deverá ser realizada através de uma nova migration Flyway, sem modificar as migrations já aplicadas.
+
+A regra de autenticação definida para os estados do Tenant permanece:
+
+TRIAL      → login permitido
+ATIVO      → login permitido
+SUSPENSO   → login bloqueado
+CANCELADO  → login bloqueado
+
+O próximo objetivo é implementar o fluxo transacional de onboarding, garantindo que um novo Tenant seja criado com seu primeiro usuário ADMIN de forma consistente e que, em caso de falha, todas as operações sejam revertidas através de rollback.
 
 43. Visão de Longo Prazo
 
@@ -1506,8 +1521,8 @@ Estado oficial do documento
 Última atualização: 27/09/2026
 Etapa concluída: 10 — Autorização RBAC
 Etapa 10.1: Fundação de Onboarding em andamento
-Última subetapa concluída: 10.1.1 — Roles padrão
-Próxima subetapa: 10.1.2 — Validação do TRIAL
-Último commit: 0c0f031 feat: adiciona seed dos roles padrão
-Testes registrados: 48/48 passando
+Última subetapa concluída: 10.1.2 — TRIAL funcional
+Próxima subetapa: 10.1.3 — Primeiro ADMIN
+Último commit: a6daa3c docs: atualiza arquitetura e onboarding
+Testes registrados: 49/49 passando
 Status do projeto: Core de segurança concluído; V6 publicada; fundação de onboarding em andamento.
