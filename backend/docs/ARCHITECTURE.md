@@ -4,9 +4,8 @@ Produto: TAGOX Flow
 Empresa: TAGOX Tech
 Repositório: Claytons1512FullStack/tagox-flow
 Branch principal: main
-Último commit: 749f565 feat: implementa autorizacao RBAC
-Estado: Etapa 10 concluída e publicada; Etapa 10.1 — Fundação de Onboarding — definida como próxima etapa.
-
+Último commit: 0c0f031 feat: adiciona seed dos roles padrão
+Estado: Etapa 10 concluída e publicada; Etapa 10.1 — Fundação de Onboarding em andamento; roles padrão já garantidas por Flyway.
 1. Visão Geral
 
 O TAGOX Flow é uma plataforma SaaS desenvolvida pela TAGOX Tech para gestão de serviços profissionais.
@@ -392,7 +391,7 @@ Novas alterações devem ser implementadas através de novas versões.
 
 14. Histórico das Migrations
 
-Atualmente existem cinco migrations estruturais principais.
+Atualmente existem seis migrations principais.
 
 V1 — create_tenant
 
@@ -428,11 +427,18 @@ Criação da associação entre usuários e papéis.
 Utiliza chave composta:
 
 (usuario_id, role_id)
-V6 — próxima migration
 
-A próxima migration planejada será responsável pelo seed das roles padrão.
+V6 — seed_standard_roles
 
-Antes de criá-la, o schema real da tabela role será auditado.
+Garante as roles padrão do sistema:
+
+ADMIN;
+PROFISSIONAL;
+ASSISTENTE.
+
+A migration foi aplicada com sucesso e utiliza inserção idempotente através de:
+
+ON CONFLICT (tipo) DO NOTHING.
 
 15. Integridade e Segurança
 
@@ -842,13 +848,15 @@ Objetivos:
 
 10.1.1 — Roles padrão
 
-Criar nova migration Flyway para garantir:
+Status: CONCLUÍDA
+
+A migration Flyway V6 foi criada para garantir as roles padrão:
 
 ADMIN
 PROFISSIONAL
 ASSISTENTE
 
-Sem alterar V1–V5.
+A V6 foi aplicada com sucesso sem alterar as migrations anteriores.
 
 10.1.2 — TRIAL funcional
 
@@ -861,6 +869,7 @@ Mantendo:
 ATIVO      → login permitido
 SUSPENSO   → login bloqueado
 CANCELADO  → login bloqueado
+
 10.1.3 — Primeiro ADMIN
 
 O onboarding deverá garantir que um novo Tenant não fique sem administrador.
@@ -868,32 +877,62 @@ O onboarding deverá garantir que um novo Tenant não fique sem administrador.
 Modelo:
 
 Criar Tenant
-     ↓
+↓
 TRIAL
-     ↓
+↓
 Criar primeiro User
-     ↓
+↓
+ATIVO
+↓
 ADMIN
-     ↓
+↓
 Criar UserRole
-     ↓
+↓
 Tenant pronto
 
-Essas operações deverão ocorrer dentro de uma transação única.
+Essas operações deverão ocorrer dentro de uma única transação.
 
-Em caso de falha:
+A orquestração será responsabilidade de uma camada de aplicação própria de onboarding, utilizando os Services existentes sempre que possível.
+
+Em caso de falha em qualquer etapa:
 
 ROLLBACK
+
+O usuário ADMIN criado durante o onboarding não será autenticado automaticamente. O acesso ocorrerá posteriormente pelo fluxo normal de login.
+
 10.1.4 — Endpoint de onboarding
 
-O caso de uso será modelado antes da decisão final sobre o endpoint público.
+O onboarding será exposto através de um endpoint público separado:
 
-A arquitetura deverá permitir posteriormente:
+POST /api/onboarding
 
-onboarding self-service;
-onboarding controlado pela TAGOX.
+O endpoint será responsável por orquestrar a criação inicial da organização:
 
-A regra de negócio deverá existir em uma camada de aplicação reutilizável, evitando duplicação.
+Tenant
+↓
+User
+↓
+ADMIN
+↓
+UserRole
+
+O Tenant será criado inicialmente com status TRIAL.
+
+O primeiro usuário será criado como ATIVO e receberá a role ADMIN.
+
+Todas as operações deverão ocorrer dentro de uma única transação.
+
+Em caso de falha em qualquer etapa:
+
+ROLLBACK
+
+O onboarding não irá gerar JWT nem autenticar automaticamente o usuário.
+
+Após a conclusão do onboarding, a autenticação continuará sendo realizada através do fluxo normal:
+
+POST /api/auth/login
+
+A regra de negócio deverá existir em uma camada de aplicação reutilizável, permitindo futuramente diferentes formas de entrada, como onboarding self-service ou onboarding controlado pela TAGOX, sem duplicação das regras de domínio.
 
 26. Decisão sobre Trial
 
@@ -915,6 +954,7 @@ suspensão automática.
 Essas regras serão definidas quando o modelo comercial do SaaS estiver formalizado.
 
 27. Decisões Arquiteturais
+
 27.1 Multi-Tenant
 
 Modelo:
@@ -949,9 +989,9 @@ Entidades JPA não devem ser utilizadas diretamente como contratos da API quando
 Modelo inicial:
 
 User
- ↓
+↓
 UserRole
- ↓
+↓
 Role
 27.6 Segurança Multi-Tenant
 
@@ -964,6 +1004,30 @@ O Tenant deve ser determinado pelo contexto confiável da autenticação.
 O primeiro usuário de um novo Tenant deverá ser ADMIN.
 
 Tenant + primeiro ADMIN devem ser criados atomicamente.
+
+O onboarding técnico não representa contratação comercial.
+
+O fluxo de contratação será tratado separadamente e poderá envolver:
+
+seleção de módulos;
+proposta comercial;
+contrato;
+assinatura;
+pagamento;
+confirmação da contratação pela TAGOX Tech;
+configuração do Tenant;
+ativação dos módulos contratados;
+definição das permissões;
+criação ou ativação dos usuários;
+envio das credenciais ou instruções de acesso.
+
+A existência da role ADMIN não significa que o Tenant possui acesso automático a todos os módulos do sistema.
+
+Roles representam o que um usuário pode fazer.
+
+Módulos contratados representam o que o Tenant possui contratado.
+
+Essas duas dimensões deverão permanecer separadas na arquitetura.
 
 28. Funcionalidades Ainda Não Implementadas
 
@@ -1279,7 +1343,7 @@ Neste momento:
 │ User Base                      ✅           │
 │ Exceptions                     ✅           │
 │ PostgreSQL                     ✅           │
-│ Flyway V1–V5                   ✅           │
+│ Flyway V1–V6                   ✅           │
 │ JWT                            ✅           │
 │ Authentication                 ✅           │
 │ RBAC Base                      ✅           │
@@ -1311,7 +1375,7 @@ BUILD SUCCESS
 
 Último commit:
 
-749f565 feat: implementa autorizacao RBAC
+0c0f031 feat: adiciona seed dos roles padrão
 
 Branch:
 
@@ -1323,44 +1387,44 @@ O commit foi publicado no GitHub.
 
 A próxima atividade oficial é:
 
-Etapa 10.1.1 — Auditar o schema real da tabela role.
+Etapa 10.1.2 — Validar o comportamento de autenticação do Tenant em TRIAL.
 
-Antes de criar a V6 serão verificados:
+A sequência planejada é:
 
-colunas;
-tipos;
-chave primária;
-constraints;
-índices;
-unicidade;
-registros existentes;
-compatibilidade com os dados atuais.
-
-Depois:
-
-Auditar role
- ↓
-Definir V6
- ↓
-Criar migration
- ↓
-Testar Flyway
- ↓
-Ajustar login TRIAL
- ↓
-Modelar onboarding
- ↓
-Criar primeiro ADMIN transacional
- ↓
-Testar onboarding
- ↓
+Validar TRIAL no AuthService
+↓
+Criar/ajustar testes de autenticação
+↓
+Validar login de Tenant TRIAL
+↓
+Modelar DTOs do onboarding
+↓
+Implementar OnboardingService
+↓
+Implementar POST /api/onboarding
+↓
+Criar Tenant + primeiro User ADMIN em transação única
+↓
+Testar rollback
+↓
+Testar isolamento e autorização
+↓
+Validar fluxo completo
+↓
+Atualizar documentação
+↓
 Commit
- ↓
+↓
 Push
- ↓
+↓
 Concluir Etapa 10.1
- ↓
+↓
 Etapa 11
+
+A V6 já foi criada e publicada.
+
+Não serão alteradas as migrations V1–V6.
+
 43. Visão de Longo Prazo
 
 O TAGOX Flow não está sendo construído como uma aplicação isolada para uma única empresa.
@@ -1411,12 +1475,25 @@ validação HTTP real.
 
 A Etapa 10 consolidou a autorização real através do Spring Security.
 
-O próximo objetivo é fechar a Fundação de Onboarding, eliminando as duas inconsistências identificadas durante a validação:
+A Etapa 10.1 está em andamento.
 
-roles padrão dependerem de inserção manual;
-Tenant TRIAL não conseguir autenticar.
+A primeira inconsistência identificada, relacionada à dependência de inserção manual das roles padrão, foi resolvida através da migration V6.
 
-Depois disso, o projeto estará preparado para entrar na construção dos módulos de negócio.
+O próximo objetivo é concluir a Fundação de Onboarding, validando o comportamento de autenticação do Tenant em TRIAL e implementando o fluxo transacional de criação inicial:
+
+Tenant
+↓
+TRIAL
+↓
+primeiro User
+↓
+ATIVO
+↓
+ADMIN
+↓
+UserRole
+
+Após a conclusão do onboarding, o projeto estará preparado para entrar na construção dos módulos de negócio.
 
 A evolução continuará seguindo uma regra fundamental:
 
@@ -1426,9 +1503,11 @@ O objetivo final é entregar um TAGOX Flow que não apenas funcione em desenvolv
 
 Estado oficial do documento
 
-Última atualização: 26/09/2026
+Última atualização: 27/09/2026
 Etapa concluída: 10 — Autorização RBAC
-Próxima etapa: 10.1 — Fundação de Onboarding
-Último commit: 749f565
-Testes: 48/48 passando
-Status do projeto: Fundação de segurança concluída; preparação do onboarding em andamento.
+Etapa 10.1: Fundação de Onboarding em andamento
+Última subetapa concluída: 10.1.1 — Roles padrão
+Próxima subetapa: 10.1.2 — Validação do TRIAL
+Último commit: 0c0f031 feat: adiciona seed dos roles padrão
+Testes registrados: 48/48 passando
+Status do projeto: Core de segurança concluído; V6 publicada; fundação de onboarding em andamento.
