@@ -1,5 +1,6 @@
 package com.tagox.flow.config;
 
+import com.tagox.flow.domain.userrole.UserRoleRepository;
 import com.tagox.flow.security.JwtAuthenticationFilter;
 import com.tagox.flow.security.JwtService;
 
@@ -12,18 +13,24 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
+@EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
 
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            JwtService jwtService
+            JwtService jwtService,
+            UserRoleRepository userRoleRepository
     ) throws Exception {
 
         JwtAuthenticationFilter jwtAuthenticationFilter =
-                new JwtAuthenticationFilter(jwtService);
+                new JwtAuthenticationFilter(
+                        jwtService,
+                        userRoleRepository
+                );
 
         http
                 .csrf(csrf -> csrf.disable())
@@ -53,5 +60,4 @@ public class SecurityConfig {
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 }

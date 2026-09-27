@@ -11,15 +11,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 
-
 @Entity
 @Table(name = "usuario_role")
 public class UserRole {
 
-
     @EmbeddedId
     private UserRoleId id;
-
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("usuarioId")
@@ -29,7 +26,6 @@ public class UserRole {
     )
     private User usuario;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("roleId")
     @JoinColumn(
@@ -38,19 +34,14 @@ public class UserRole {
     )
     private Role role;
 
-
-
     protected UserRole() {
         // Construtor protegido exigido pelo Hibernate
     }
-
-
 
     public UserRole(
             User usuario,
             Role role
     ) {
-
         this.usuario = usuario;
         this.role = role;
 
@@ -60,17 +51,13 @@ public class UserRole {
         );
     }
 
-
-
     public UserRoleId getId() {
         return id;
     }
 
-
     public User getUsuario() {
         return usuario;
     }
-
 
     public Role getRole() {
         return role;
