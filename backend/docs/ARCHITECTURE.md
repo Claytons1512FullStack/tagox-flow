@@ -1,29 +1,39 @@
-# TAGOX Flow — Arquitetura e Evolução do Sistema
+TAGOX Flow — Arquitetura e Evolução do Sistema
 
-## 1. Visão Geral
+Produto: TAGOX Flow
+Empresa: TAGOX Tech
+Repositório: Claytons1512FullStack/tagox-flow
+Branch principal: main
+Último commit: 749f565 feat: implementa autorizacao RBAC
+Estado: Etapa 10 concluída e publicada; Etapa 10.1 — Fundação de Onboarding — definida como próxima etapa.
+
+1. Visão Geral
 
 O TAGOX Flow é uma plataforma SaaS desenvolvida pela TAGOX Tech para gestão de serviços profissionais.
 
-A plataforma está sendo construída com uma arquitetura modular, preparada para atender diferentes verticais de serviços profissionais.
+A plataforma está sendo construída com uma arquitetura modular e multi-tenant, preparada para atender diferentes verticais de serviços profissionais.
 
-A primeira vertical considerada para evolução da plataforma é a área de psicologia e saúde, mantendo uma base arquitetural reutilizável para futuras verticais, como medicina e jurídico.
+A primeira vertical considerada para evolução da plataforma é a área de psicologia e saúde, mantendo uma base arquitetural reutilizável para futuras verticais, como medicina, jurídico e outros serviços profissionais.
 
-O projeto está sendo desenvolvido de forma incremental, priorizando inicialmente:
+O projeto está sendo desenvolvido de forma incremental, priorizando:
 
-- fundação arquitetural;
-- arquitetura multi-tenant;
-- isolamento de dados;
-- gerenciamento de usuários;
-- controle de acesso;
-- integridade do banco de dados;
-- testes automatizados;
-- segurança e escalabilidade.
+fundação arquitetural;
+arquitetura multi-tenant;
+isolamento de dados;
+gerenciamento de usuários;
+autenticação;
+autorização;
+RBAC;
+integridade do banco de dados;
+versionamento através de Flyway;
+testes automatizados;
+segurança;
+escalabilidade;
+preparação para produção.
 
-Neste estágio, a prioridade é construir uma base sólida antes da implementação dos módulos funcionais específicos de cada vertical.
+O princípio adotado é construir primeiro um Core SaaS sólido, antes de acoplar os módulos funcionais específicos de cada vertical.
 
----
-
-## 2. Objetivo do TAGOX Flow
+2. Objetivo do TAGOX Flow
 
 O objetivo do TAGOX Flow é fornecer uma plataforma centralizada para gestão de serviços profissionais, permitindo que diferentes organizações utilizem o mesmo sistema com segurança e isolamento de dados.
 
@@ -31,17 +41,16 @@ Cada organização cadastrada na plataforma representa um Tenant.
 
 A arquitetura deve garantir:
 
-- cada Tenant possui seus próprios usuários e dados;
-- usuários possuem vínculo obrigatório com um Tenant;
-- dados entre organizações permanecem isolados;
-- acessos são controlados por regras de autorização;
-- a plataforma pode evoluir para diferentes segmentos sem comprometer sua base.
+cada Tenant possui seus próprios usuários e dados;
+usuários possuem vínculo obrigatório com um Tenant;
+dados entre organizações permanecem isolados;
+usuários são autenticados;
+acessos são controlados por roles e regras de autorização;
+a plataforma pode evoluir para diferentes segmentos sem comprometer sua base.
 
 O TAGOX Flow é concebido como um produto SaaS da TAGOX Tech.
 
----
-
-## 3. Modelo SaaS
+3. Modelo SaaS
 
 O TAGOX Flow utiliza o conceito de Software as a Service (SaaS).
 
@@ -49,59 +58,62 @@ Uma única aplicação atende múltiplas organizações clientes.
 
 Cada organização possui uma representação lógica própria dentro da plataforma, denominada Tenant.
 
-O modelo atual adotado é:
+O modelo adotado é:
 
-**Banco compartilhado + schema compartilhado + isolamento lógico por tenant_id.**
+Shared Database + Shared Schema + isolamento lógico por tenant_id.
 
-Nesse modelo, diferentes organizações utilizam a mesma infraestrutura, porém os dados permanecem separados através das relações de Tenant existentes no domínio.
+Diferentes organizações utilizam a mesma infraestrutura, porém os dados permanecem separados através das relações de Tenant existentes no domínio e das regras de aplicação.
 
 A regra fundamental da arquitetura é:
 
-> Nenhum Tenant pode acessar dados pertencentes a outro Tenant.
+Nenhum Tenant pode acessar ou manipular dados pertencentes a outro Tenant.
 
----
+4. Arquitetura Multi-Tenant
+4.1 Estratégia adotada
 
-
-## 4. Arquitetura Multi-Tenant
-
-### 4.1 Estratégia adotada
-
-O TAGOX Flow utiliza o modelo:
+O TAGOX Flow utiliza:
 
 Shared Database + Shared Schema + tenant_id
 
-A aplicação utiliza uma única estrutura de banco de dados para múltiplas organizações.
+A aplicação utiliza uma estrutura compartilhada de banco de dados para múltiplas organizações.
 
-O isolamento dos dados ocorre através do relacionamento entre as entidades e o Tenant responsável pelos registros.
+O isolamento ocorre através do relacionamento entre as entidades e o Tenant responsável pelos registros.
 
-A estrutura fundamental atual é:
+Estrutura fundamental atual:
 
 Tenant
- |
  └── User
-       |
-       └── UserRole
-              |
-              └── Role
+      └── UserRole
+           └── Role
 
----
+Os futuros módulos de negócio deverão respeitar o mesmo princípio de associação e isolamento.
 
-### 4.2 Conceito de Tenant
+4.2 Conceito de Tenant
 
 Tenant representa uma organização cliente dentro da plataforma.
 
 Exemplos de organizações que poderão utilizar o TAGOX Flow:
 
-- clínicas;
-- consultórios;
-- escritórios;
-- empresas de serviços profissionais.
+clínicas;
+consultórios;
+escritórios;
+empresas de serviços profissionais.
 
 Cada Tenant possui seus próprios usuários e dados operacionais.
 
----
+Estados atualmente definidos:
 
-### 4.3 Isolamento de Dados
+TRIAL;
+ATIVO;
+SUSPENSO;
+CANCELADO.
+Regra arquitetural definida
+
+O estado TRIAL será considerado um estado funcional da plataforma e deverá permitir autenticação.
+
+A política comercial de duração, limites e expiração do Trial será definida posteriormente.
+
+4.3 Isolamento de Dados
 
 O isolamento entre organizações é um requisito fundamental da arquitetura.
 
@@ -111,20 +123,20 @@ tenant_id
 
 Um usuário pertencente a um Tenant não deve acessar informações pertencentes a outro Tenant.
 
-Essa regra também possui cobertura através de testes automatizados.
+Essa regra já possui cobertura através de testes automatizados e validação HTTP real.
 
----
+4.4 Integridade Multi-Tenant
 
-### 4.4 Integridade Multi-Tenant
-
-A integridade da associação entre usuários e Tenants é protegida pelo banco de dados.
+A integridade da associação entre usuários e Tenants é protegida pelo banco e pela aplicação.
 
 Regras atuais:
 
-- usuário obrigatoriamente pertence a um Tenant;
-- relacionamento protegido por chave estrangeira;
-- não existe usuário sem organização vinculada;
-- duplicidade de usuário é controlada por Tenant e email.
+usuário obrigatoriamente pertence a um Tenant;
+relacionamento protegido por chave estrangeira;
+não existe usuário normal sem organização vinculada;
+duplicidade de usuário é controlada por Tenant e email;
+o Tenant utilizado na criação de usuários autenticados é obtido do contexto do usuário autenticado;
+o cliente não pode escolher arbitrariamente o tenantId no corpo da requisição.
 
 A restrição atual permite:
 
@@ -132,1066 +144,1291 @@ A restrição atual permite:
 
 Isso significa:
 
-- o mesmo email pode existir em organizações diferentes;
-- o mesmo email não pode ser duplicado dentro do mesmo Tenant.
+Tenant A
+mesmo@email.com
 
----
+Tenant B
+mesmo@email.com
 
-## 5. Stack Tecnológica
+podem coexistir.
 
-O TAGOX Flow está sendo desenvolvido utilizando uma stack moderna baseada em Java e Spring Boot.
+Dentro do mesmo Tenant, o email não pode ser duplicado.
 
-### Backend
+5. Stack Tecnológica
+
+O TAGOX Flow está sendo desenvolvido utilizando uma stack baseada em Java e Spring Boot.
+
+Backend
 
 Tecnologias principais:
 
-- Java 21;
-- Spring Boot 4.1.1;
-- Spring Data JPA;
-- Hibernate;
-- Spring Web MVC;
-- Bean Validation;
-- Maven.
+Java 21;
+Spring Boot 4.1.1;
+Spring Web MVC;
+Spring Data JPA;
+Hibernate;
+Spring Security;
+Bean Validation;
+JWT;
+BCrypt;
+Maven.
+Banco de Dados
+PostgreSQL 18.6.
+Migração de Banco
+Flyway.
 
-### Banco de Dados
+Todas as alterações estruturais do banco devem ser realizadas através de migrations versionadas.
 
-O banco de dados utilizado atualmente é:
+Testes
 
-- PostgreSQL.
+O projeto utiliza:
 
-O PostgreSQL foi escolhido por sua robustez, confiabilidade e capacidade de atender aplicações SaaS escaláveis.
+Spring Boot Test;
+JUnit;
+testes de persistência;
+testes de serviços;
+testes de controllers;
+testes de isolamento multi-tenant;
+testes de autenticação;
+testes de JWT;
+testes de autorização/RBAC.
+6. Estrutura do Backend
 
-### Migração de Banco
-
-A evolução da estrutura do banco é controlada pelo:
-
-- Flyway.
-
-Todas as alterações estruturais devem ser realizadas através de migrations versionadas.
-
-### Testes
-
-O projeto possui testes automatizados utilizando:
-
-- Spring Boot Test;
-- JUnit;
-- testes de persistência;
-- testes de controllers;
-- testes de regras de negócio.
-
-A estratégia de testes tem como objetivo garantir estabilidade da base arquitetural antes da criação dos módulos funcionais.
-
----
-
-## 6. Estrutura do Backend
-
-O backend do TAGOX Flow segue uma organização baseada em domínio, separando responsabilidades entre entidades, serviços, controladores, DTOs e tratamento de exceções.
+O backend segue uma organização baseada em domínio, separando responsabilidades entre entidades, serviços, controladores, DTOs, segurança e tratamento de exceções.
 
 Estrutura principal:
 
 controller
-
-Responsável pelos endpoints HTTP da aplicação.
-
 domain
-
-Contém as entidades de negócio, enums e repositórios relacionados ao domínio.
-
 dto
+service
+security
+config
+exception
+Controller
+
+Responsável pelos endpoints HTTP.
+
+Domain
+
+Contém entidades, enums e repositórios relacionados ao domínio.
+
+DTO
 
 Contém objetos utilizados na comunicação entre API e aplicação.
 
-service
+Service
 
 Contém regras de negócio e operações de aplicação.
 
-exception
+Security
+
+Contém os componentes relacionados à autenticação e contexto de segurança.
+
+Config
+
+Contém configurações da aplicação, incluindo Spring Security.
+
+Exception
 
 Centraliza exceções de negócio e tratamento global de erros.
 
----
-
-## 7. Domínio Tenant
+7. Domínio Tenant
 
 Tenant representa a organização cliente dentro da plataforma.
 
 Responsabilidades:
 
-- identificar a organização;
-- manter informações próprias da empresa;
-- servir como base de isolamento dos dados.
-
-O Tenant é a entidade principal da arquitetura multi-tenant.
-
-Todos os usuários precisam estar vinculados a um Tenant.
+identificar a organização;
+manter informações próprias da empresa;
+servir como base de isolamento dos dados;
+controlar o ciclo de vida da organização.
 
 A implementação atual possui:
 
-- Tenant;
-- TenantRepository;
-- TenantService;
-- TenantStatus;
-- TipoPessoa.
-
----
-
-## 8. Domínio User
+Tenant;
+TenantRepository;
+TenantService;
+TenantController;
+TenantStatus;
+TipoPessoa;
+DTOs de Tenant.
+8. Domínio User
 
 User representa um usuário pertencente a uma organização dentro do TAGOX Flow.
 
 Cada usuário possui:
 
-- identificação própria;
-- Tenant associado;
-- nome;
-- email;
-- senha armazenada através de hash;
-- status;
-- informações de criação e atualização.
+identificação própria;
+Tenant associado;
+nome;
+email;
+senha armazenada através de hash;
+status;
+informações relacionadas à persistência.
 
 A associação obrigatória com Tenant garante que usuários estejam sempre vinculados a uma organização.
 
 A implementação atual possui:
 
-- User;
-- UserRepository;
-- UserStatus.
+User;
+UserRepository;
+UserStatus;
+UserService;
+UserController;
+CreateUserRequest;
+UserResponse.
+9. RBAC — Controle de Acesso
 
----
-
-## 9. RBAC — Controle de Acesso
-
-RBAC (Role-Based Access Control) é o modelo utilizado para controle de acesso baseado em papéis.
+O TAGOX Flow utiliza RBAC — Role-Based Access Control — como modelo inicial de autorização.
 
 O objetivo é permitir que usuários possuam diferentes níveis de acesso conforme sua função dentro da organização.
 
-O modelo inicial implementado é:
+O modelo implementado é:
 
-User → UserRole → Role
+User
+ ↓
+UserRole
+ ↓
+Role
 
 Os papéis atualmente definidos são:
 
-- ADMIN;
-- PROFISSIONAL;
-- ASSISTENTE.
+ADMIN;
+PROFISSIONAL;
+ASSISTENTE.
 
-Nesta etapa do projeto, o RBAC representa a fundação para futuras permissões e regras de acesso mais específicas.
+O RBAC já está integrado ao Spring Security.
 
----
-
-
-## 10. Domínio Role
+10. Domínio Role
 
 Role representa um papel de acesso dentro do TAGOX Flow.
 
-O objetivo da entidade Role é definir funções que podem ser atribuídas aos usuários.
+A implementação possui:
 
-A implementação atual possui:
+Role;
+RoleRepository;
+RoleType.
 
-- Role;
-- RoleRepository;
-- RoleType.
+Os tipos atualmente definidos são:
 
-Os tipos de papel atualmente definidos são:
-
-- ADMIN;
-- PROFISSIONAL;
-- ASSISTENTE.
+ADMIN
+PROFISSIONAL
+ASSISTENTE
 
 A entidade Role possui:
 
-- identificador UUID;
-- tipo do papel;
-- descrição.
+identificador UUID;
+tipo;
+descrição.
 
-O campo tipo utiliza enumeração persistida como texto, garantindo maior legibilidade no banco de dados.
+O tipo é persistido como enumeração textual.
 
----
+Próxima evolução
 
-## 11. Domínio UserRole
+As roles padrão deverão ser garantidas pelo Flyway.
+
+Será criada uma nova migration, sem alterar V1–V5:
+
+V6__seed_default_roles.sql
+
+Essa migration será responsável por garantir as roles padrão do sistema.
+
+11. Domínio UserRole
 
 UserRole representa a associação entre um usuário e um papel de acesso.
 
-Essa entidade funciona como tabela associativa entre User e Role.
-
-O relacionamento atual é:
+A relação é:
 
 User → UserRole → Role
 
 A implementação utiliza chave composta através de:
 
-- UserRole;
-- UserRoleId;
-- UserRoleRepository.
+UserRole;
+UserRoleId;
+UserRoleRepository.
 
-A associação permite que um usuário possua papéis dentro da organização.
+O relacionamento permite que um usuário possua uma ou mais roles.
 
----
+12. Relacionamentos do Modelo
 
-## 12. Relacionamentos do Modelo
-
-O modelo atual do TAGOX Flow possui os seguintes relacionamentos principais:
-
-Tenant possui vários usuários.
-
-User pertence obrigatoriamente a um Tenant.
-
-User pode possuir associações com papéis através de UserRole.
-
-Role pode estar associado a múltiplos usuários através de UserRole.
-
-Modelo conceitual:
+O modelo atual possui os seguintes relacionamentos principais:
 
 Tenant
- |
  └── User
-       |
-       └── UserRole
-              |
-              └── Role
+      └── UserRole
+           └── Role
 
----
+Conceitualmente:
 
-## 13. Banco de Dados e Flyway
+Tenant possui vários Users;
+User pertence obrigatoriamente a um Tenant;
+User pode possuir múltiplas associações UserRole;
+Role pode estar associada a múltiplos usuários.
+
+Os futuros módulos de negócio deverão seguir o mesmo princípio de isolamento.
+
+13. Banco de Dados e Flyway
 
 O TAGOX Flow utiliza PostgreSQL como banco de dados principal.
 
 A evolução estrutural do banco é controlada pelo Flyway.
 
-O Hibernate está configurado para validar o schema existente utilizando:
+O Hibernate está configurado para validar o schema existente:
 
 spring.jpa.hibernate.ddl-auto=validate
 
-Essa configuração garante que:
+Isso garante que:
 
-- o Hibernate não cria tabelas automaticamente;
-- alterações estruturais devem ser feitas através de migrations;
-- o modelo Java deve estar alinhado com o banco.
+Hibernate não cria tabelas automaticamente;
+alterações estruturais devem ser feitas através de migrations;
+o modelo Java deve permanecer alinhado ao banco.
 
----
+Regra:
 
-## 14. Histórico das Migrations
+Migrations aplicadas não devem ser alteradas.
 
-O estado atual do banco possui cinco migrations.
+Novas alterações devem ser implementadas através de novas versões.
 
-### V1 — create_tenant
+14. Histórico das Migrations
 
-Responsável pela criação inicial da estrutura de Tenant.
+Atualmente existem cinco migrations estruturais principais.
 
----
+V1 — create_tenant
 
-### V2 — alter_tenant_timestamps
+Criação inicial da estrutura de Tenant.
 
-Responsável pelos ajustes relacionados aos timestamps do Tenant.
+V2 — alter_tenant_timestamps
 
----
+Ajustes relacionados aos timestamps do Tenant.
 
-### V3 — create_usuario
+V3 — create_usuario
 
-Responsável pela criação da tabela de usuários.
-
-Inclui:
-
-- vínculo com Tenant;
-- dados cadastrais;
-- controle de status;
-- timestamps.
-
----
-
-### V4 — create_role
-
-Responsável pela criação da estrutura de papéis de acesso.
+Criação da tabela de usuários.
 
 Inclui:
 
-- identificação do papel;
-- tipo;
-- descrição.
+vínculo com Tenant;
+dados cadastrais;
+status;
+timestamps.
+V4 — create_role
 
----
+Criação da estrutura de papéis.
 
-### V5 — create_usuario_role
+Inclui:
 
-Responsável pela criação da associação entre usuários e papéis.
+identificação;
+tipo;
+descrição.
+V5 — create_usuario_role
+
+Criação da associação entre usuários e papéis.
 
 Utiliza chave composta:
 
 (usuario_id, role_id)
+V6 — próxima migration
 
----
+A próxima migration planejada será responsável pelo seed das roles padrão.
 
-## 15. Integridade e Regras de Segurança
+Antes de criá-la, o schema real da tabela role será auditado.
 
-As regras de integridade atuais são protegidas em diferentes camadas:
+15. Integridade e Segurança
 
-### Banco de Dados
+As regras de integridade são protegidas em diferentes camadas.
 
-- chaves primárias UUID;
-- chaves estrangeiras;
-- restrições de unicidade;
-- campos obrigatórios.
+Banco de Dados
+UUID;
+chaves primárias;
+chaves estrangeiras;
+constraints;
+campos obrigatórios;
+unicidade.
+Aplicação
+validação de entrada;
+regras de negócio;
+Services;
+tratamento global de exceções.
+Segurança
+autenticação;
+JWT;
+BCrypt;
+Spring Security;
+autorização por role;
+isolamento por Tenant.
+16. DTOs
 
-### Aplicação
+O TAGOX Flow utiliza DTOs para controlar a comunicação entre API e aplicação.
 
-- validações de entrada;
-- regras de negócio nos services;
-- tratamento centralizado de exceções.
+Objetivos:
 
-### Multi-Tenant
+separar entrada e saída das entidades;
+evitar exposição direta das entidades JPA;
+controlar dados recebidos;
+facilitar validações;
+manter contratos da API mais estáveis.
+16.1 DTOs de Tenant
 
-A arquitetura exige que toda informação pertencente a uma organização mantenha sua associação correta com o Tenant.
+Incluem:
 
-O isolamento entre organizações é uma regra fundamental do sistema.
+TenantRequestDTO;
+TenantResponseDTO.
+16.2 DTOs de User
 
----
+Incluem:
 
+CreateUserRequest;
+UserResponse.
 
-## 16. DTOs
+Uma decisão importante já implementada:
 
-O TAGOX Flow utiliza DTOs (Data Transfer Objects) para controlar a comunicação entre a API e as camadas internas da aplicação.
+CreateUserRequest não recebe mais tenantId para determinar o Tenant do usuário em uma operação autenticada.
 
-Os DTOs possuem como objetivo:
+O Tenant é determinado pelo contexto autenticado.
 
-- separar os modelos de entrada e saída das entidades do banco;
-- evitar exposição direta das entidades JPA;
-- controlar dados recebidos pela aplicação;
-- facilitar validações e evolução dos contratos da API.
+17. Services
 
----
-
-### 16.1 DTOs de Tenant
-
-O domínio Tenant possui os seguintes DTOs:
-
-- TenantRequestDTO;
-- TenantResponseDTO.
-
-TenantRequestDTO representa os dados recebidos para criação ou atualização de uma organização.
-
-TenantResponseDTO representa os dados retornados pela API após o processamento.
-
----
-
-### 16.2 DTOs de User
-
-O domínio User possui os seguintes DTOs:
-
-- CreateUserRequest;
-- UserResponse.
-
-CreateUserRequest representa os dados necessários para criação de um usuário.
-
-UserResponse representa os dados retornados pela API.
-
----
-
-A utilização de DTOs mantém uma arquitetura mais segura e permite que mudanças internas no modelo de domínio não afetem diretamente os consumidores da API.
-
----
-
-
-## 17. Services
-
-A camada de Services concentra as regras de negócio do TAGOX Flow.
-
-Os Services são responsáveis por:
-
-- executar operações de domínio;
-- validar regras da aplicação;
-- controlar fluxos de negócio;
-- evitar que regras importantes fiquem dentro dos Controllers.
-
-A separação entre Controller e Service permite uma arquitetura mais organizada, testável e preparada para evolução.
-
----
-
-## 17.1 TenantService
-
-O TenantService é responsável pelas operações relacionadas ao domínio Tenant.
+A camada de Services concentra as regras de negócio.
 
 Responsabilidades:
 
-- criação de organizações;
-- validação das regras de negócio do Tenant;
-- consulta de informações da organização;
-- integração entre Controller e Repository.
+operações de domínio;
+validações;
+fluxos de aplicação;
+controle transacional quando necessário;
+comunicação com repositories.
 
-O TenantService atua como camada intermediária entre a API e a persistência dos dados.
+Principais Services atuais:
 
----
+TenantService;
+UserService;
+UserRoleService;
+AuthService.
+17.1 TenantService
 
-## 17.2 UserService
+Responsável por operações relacionadas ao Tenant.
 
-O UserService controla as operações relacionadas aos usuários.
+Inclui:
+
+criação;
+validação;
+regras de negócio;
+consulta;
+persistência através do repository.
+17.2 UserService
+
+Responsável pelas operações relacionadas aos usuários.
+
+Inclui:
+
+criação;
+validação;
+associação ao Tenant;
+proteção contra duplicidade;
+persistência da senha através de hash.
+
+No fluxo autenticado, o Tenant utilizado pelo UserService vem do contexto autenticado.
+
+17.3 UserRoleService
+
+Responsável pela associação entre usuários e roles.
+
+Inclui:
+
+busca do usuário;
+busca da role;
+verificação de duplicidade;
+criação de UserRole.
+17.4 AuthService
+
+Responsável pelo fluxo de autenticação.
+
+O login utiliza:
+
+tenantSlug
+email
+senha
+
+Fluxo:
+
+Login
+ ↓
+Tenant
+ ↓
+User
+ ↓
+Validação de status
+ ↓
+BCrypt
+ ↓
+JWT
+
+O JWT contém:
+
+userId
+tenantId
+Evolução definida
+
+O TRIAL deverá ser aceito como estado autenticável.
+
+A regra futura será:
+
+TRIAL      → login permitido
+ATIVO      → login permitido
+SUSPENSO   → login bloqueado
+CANCELADO  → login bloqueado
+
+A política de duração e expiração do Trial ainda não será implementada nesta etapa.
+
+18. Controllers
+
+Os Controllers representam a camada HTTP.
 
 Responsabilidades:
 
-- criação de usuários;
-- validação dos dados recebidos;
-- associação obrigatória com Tenant;
-- regras relacionadas ao ciclo de vida do usuário.
+receber requisições;
+validar DTOs;
+encaminhar para Services;
+retornar respostas HTTP.
 
-Todo usuário criado no sistema deve possuir vínculo com uma organização.
+Regras complexas de negócio devem permanecer nos Services.
 
----
-
-## 17.3 UserRoleService
-
-O UserRoleService é responsável pela associação entre usuários e papéis de acesso.
-
-Responsabilidades:
-
-- vincular usuários aos Roles disponíveis;
-- controlar a relação User ↔ Role;
-- preparar a base para futuras regras de permissão.
-
-O modelo atual utiliza:
-
-User → UserRole → Role
-
-Essa camada será expandida futuramente com permissões mais detalhadas.
-
----
-
-
-## 18. Controllers
-
-Os Controllers representam a camada de entrada HTTP do TAGOX Flow.
-
-São responsáveis por:
-
-- receber requisições da API;
-- validar dados recebidos através dos DTOs;
-- encaminhar operações para os Services;
-- retornar respostas HTTP adequadas.
-
-Os Controllers não devem conter regras complexas de negócio.
-
-A responsabilidade principal é realizar a comunicação entre o mundo externo e a camada de aplicação.
-
----
-
-## 18.1 TenantController
-
-O TenantController é responsável pelos endpoints relacionados às organizações.
-
-Responsabilidades:
-
-- receber solicitações relacionadas ao Tenant;
-- utilizar TenantService para executar regras de negócio;
-- retornar informações das organizações.
-
-O Controller mantém a separação entre a camada HTTP e o domínio da aplicação.
-
----
-
-## 18.2 UserController
-
-O UserController é responsável pelos endpoints relacionados aos usuários.
-
-Responsabilidades:
-
-- receber solicitações de criação e consulta de usuários;
-- utilizar UserService para execução das regras;
-- trabalhar com DTOs de entrada e saída.
-
-Todo usuário criado através da API deve respeitar as regras de associação com Tenant.
-
----
-
-A arquitetura segue o fluxo:
+Fluxo:
 
 Cliente HTTP
-      |
-      v
+    ↓
 Controller
-      |
-      v
+    ↓
 Service
-      |
-      v
+    ↓
 Repository
-      |
-      v
-Banco de Dados
+    ↓
+Banco
+18.1 TenantController
+
+Responsável pelos endpoints relacionados aos Tenants.
+
+18.2 UserController
+
+Responsável pelos endpoints relacionados aos usuários.
+
+A criação de usuário está protegida por autorização:
 
----
+@PreAuthorize("hasRole('ADMIN')")
 
+Portanto, atualmente:
 
-## 19. Tratamento de Exceções
+ADMIN        → pode criar usuário
+PROFISSIONAL → não pode criar usuário
+ASSISTENTE    → não pode criar usuário
+19. Autenticação e Segurança
 
-O TAGOX Flow possui uma camada dedicada para tratamento de erros da aplicação.
+A camada de autenticação já está implementada.
 
-O objetivo é centralizar o gerenciamento de exceções, evitando tratamentos duplicados dentro dos Controllers.
+O TAGOX Flow utiliza:
 
-Essa abordagem permite:
+Spring Security;
+JWT;
+BCrypt;
+autenticação stateless;
+JwtAuthenticationFilter;
+AuthenticatedUser.
+19.1 Fluxo de Autenticação
+POST /api/auth/login
+        ↓
+AuthService
+        ↓
+validação Tenant
+        ↓
+validação User
+        ↓
+BCrypt
+        ↓
+JwtService
+        ↓
+JWT
+19.2 JWT
 
-- respostas HTTP padronizadas;
-- melhor experiência para consumidores da API;
-- separação entre regras de negócio e tratamento de erros;
-- maior facilidade de manutenção.
+O JWT contém:
 
----
+userId
+tenantId
 
-## 19.1 GlobalExceptionHandler
+O JwtAuthenticationFilter extrai essas informações.
 
-O GlobalExceptionHandler é responsável por capturar exceções lançadas pela aplicação e transformar esses erros em respostas HTTP adequadas.
+Em seguida, busca as roles do usuário.
 
-Responsabilidades:
+Fluxo:
 
-- interceptar exceções;
-- definir códigos HTTP;
-- padronizar mensagens de erro;
-- retornar respostas consistentes para clientes da API.
+JWT
+ ↓
+userId + tenantId
+ ↓
+UserRoleRepository
+ ↓
+RoleType
+ ↓
+GrantedAuthority
+ ↓
+Spring Security
 
----
+As authorities são geradas como:
 
-## 19.2 BusinessException
+ROLE_ADMIN
+ROLE_PROFISSIONAL
+ROLE_ASSISTENTE
+20. Autorização RBAC
 
-BusinessException representa erros relacionados às regras de negócio da aplicação.
+A autorização é aplicada através do Spring Security.
 
-Exemplos:
+Foi habilitado:
 
-- operações não permitidas;
-- validações de domínio;
-- violações de regras internas.
+@EnableMethodSecurity
 
----
+Exemplo atual:
 
-## 19.3 DuplicateResourceException
+@PreAuthorize("hasRole('ADMIN')")
 
-DuplicateResourceException representa tentativas de criação de recursos que já existem.
+O fluxo completo é:
 
-Exemplos:
+Request
+ ↓
+JWT
+ ↓
+JwtAuthenticationFilter
+ ↓
+roles
+ ↓
+GrantedAuthority
+ ↓
+Spring Security
+ ↓
+@PreAuthorize
+ ↓
+Endpoint permitido ou 403
+21. Validação Real do RBAC
 
-- usuário duplicado dentro do mesmo Tenant;
-- registros com restrições de unicidade violadas.
+O RBAC foi validado com o servidor real em execução.
 
----
+ADMIN
 
-## 19.4 ResourceNotFoundException
+Login:
 
-ResourceNotFoundException representa situações onde um recurso solicitado não foi encontrado.
+HTTP 200
 
-Exemplos:
+Criação de usuário:
 
-- Tenant inexistente;
-- usuário inexistente;
-- recurso relacionado não localizado.
+HTTP 201
+PROFISSIONAL
 
----
+Login:
 
-A centralização das exceções mantém a API mais previsível e facilita futuras evoluções do sistema.
+HTTP 200
 
----
+Criação de usuário:
 
+HTTP 403
+ASSISTENTE
 
+Login:
 
-## 20. Testes Automatizados
+HTTP 200
 
-O TAGOX Flow possui uma estratégia de testes automatizados para validar a estabilidade da arquitetura antes da implementação dos módulos funcionais.
+Criação de usuário:
 
-Os testes são utilizados para garantir:
+HTTP 403
 
-- funcionamento correto das regras de negócio;
-- integridade da persistência;
-- comportamento dos Controllers;
-- isolamento entre Tenants;
-- funcionamento da base RBAC.
+Isso comprovou o funcionamento da cadeia completa:
 
----
+JWT → Roles → Authorities → Authorization
+22. Tratamento de Exceções
 
-## 20.1 Testes de Tenant
+O TAGOX Flow possui uma camada dedicada para tratamento de erros.
 
-Os testes relacionados ao Tenant validam:
+Componentes:
 
-- criação de organizações;
-- regras de negócio;
-- persistência dos dados;
-- comportamento dos endpoints.
+GlobalExceptionHandler;
+BusinessException;
+DuplicateResourceException;
+ResourceNotFoundException.
 
-Testes existentes:
+Objetivos:
 
-- TenantControllerTest;
-- TenantPersistenceTest;
-- TenantRepositoryTest;
-- TenantServiceTest.
+padronizar respostas;
+centralizar tratamento;
+separar regras de negócio de HTTP;
+facilitar manutenção.
+23. Testes Automatizados
 
----
+O projeto possui testes automatizados para validar a estabilidade do Core.
 
-## 20.2 Testes de User
+A última execução registrada apresentou:
 
-Os testes relacionados aos usuários validam:
+Tests run: 48
+Failures: 0
+Errors: 0
+Skipped: 0
 
-- criação de usuários;
-- validações de entrada;
-- persistência;
-- associação obrigatória com Tenant.
+BUILD SUCCESS
 
-Testes existentes:
+Data da execução:
 
-- UserControllerTest;
-- UserControllerValidationTest;
-- UserPersistenceTest.
+2026-09-26 23:45:44 -03:00
+23.1 Testes de Tenant
 
----
+Cobrem:
 
-## 20.3 Testes Multi-Tenant
+criação;
+persistência;
+regras;
+endpoints;
+validações.
+23.2 Testes de User
 
-O isolamento de dados entre organizações é validado através de testes específicos.
+Cobrem:
 
-Teste existente:
+criação;
+validação;
+persistência;
+associação ao Tenant;
+duplicidade.
+23.3 Testes Multi-Tenant
 
-- UserTenantIsolationTest.
+UserTenantIsolationTest valida isolamento entre organizações.
 
-Esse teste garante que usuários pertencentes a diferentes Tenants permaneçam isolados dentro da arquitetura.
+Também existem testes HTTP demonstrando que Tenants diferentes podem possuir o mesmo email sem compartilhamento de dados.
 
----
+23.4 Testes de Authentication
 
-## 20.4 Testes RBAC
+A autenticação possui testes para:
 
-O modelo inicial de controle de acesso possui validação através de:
+login;
+JWT;
+serviço de autenticação;
+controller de autenticação.
+23.5 Testes de RBAC
 
-- UserRoleServiceTest.
+A autorização possui testes para:
 
-Esse teste valida a associação entre usuários e papéis:
+ADMIN autorizado;
+PROFISSIONAL bloqueado;
+ASSISTENTE bloqueado;
+carregamento das roles;
+HTTP 403.
+24. Etapa 10 — Autorização RBAC
+Status: CONCLUÍDA
 
-User → UserRole → Role
+A Etapa 10 foi finalizada, auditada, testada e publicada.
 
----
+Commit:
 
-A estratégia de testes permite evoluir o sistema com maior segurança, reduzindo riscos durante a criação dos próximos módulos.
+749f565 feat: implementa autorizacao RBAC
 
----
+Push:
 
+main → origin/main
 
-## 21. Estado Atual do Projeto
+Working tree ficou limpa antes do push.
 
-O TAGOX Flow encontra-se atualmente na fase de construção da fundação arquitetural do produto.
+Essa etapa estabeleceu a autorização real da plataforma.
 
-O objetivo desta etapa é garantir uma base segura e escalável antes da implementação dos módulos específicos de negócio.
+25. Etapa 10.1 — Fundação de Onboarding
+Status: DEFINIDA — PRÓXIMA ETAPA
 
-Estado atual:
+Antes dos módulos de negócio, será concluída a fundação de onboarding.
 
-- backend estruturado em Spring Boot;
-- arquitetura organizada por domínio;
-- banco PostgreSQL configurado;
-- versionamento de banco utilizando Flyway;
-- arquitetura multi-tenant implementada;
-- entidades principais criadas;
-- camada de persistência configurada;
-- DTOs implementados;
-- Services implementados;
-- Controllers implementados;
-- tratamento global de exceções implementado;
-- testes automatizados criados.
+Objetivos:
 
----
+10.1.1 — Roles padrão
 
-### Tecnologias configuradas
+Criar nova migration Flyway para garantir:
 
-Backend:
+ADMIN
+PROFISSIONAL
+ASSISTENTE
 
-- Java 21;
-- Spring Boot 4.1.1;
-- Spring Data JPA;
-- Spring Web MVC;
-- Bean Validation;
-- PostgreSQL;
-- Flyway.
+Sem alterar V1–V5.
 
----
+10.1.2 — TRIAL funcional
 
-### Banco de Dados Atual
+Permitir autenticação de Tenants em:
 
-Migrations existentes:
+TRIAL
 
-- V1 — criação da tabela tenant;
-- V2 — alteração de timestamps do tenant;
-- V3 — criação da tabela usuario;
-- V4 — criação da tabela role;
-- V5 — criação da tabela usuario_role.
+Mantendo:
 
----
+ATIVO      → login permitido
+SUSPENSO   → login bloqueado
+CANCELADO  → login bloqueado
+10.1.3 — Primeiro ADMIN
 
-### Domínios Implementados
-
-Atualmente existem os seguintes domínios:
-
-Tenant
-
-Responsável pela representação das organizações clientes.
-
-User
-
-Responsável pelos usuários vinculados aos Tenants.
-
-Role
-
-Responsável pelos papéis de acesso.
-
-UserRole
-
-Responsável pela associação entre usuários e papéis.
-
----
-
-
-## 22. Decisões Arquiteturais
-
-Esta seção registra as principais decisões técnicas tomadas durante a construção do TAGOX Flow.
-
-O objetivo é manter histórico das escolhas arquiteturais e facilitar a evolução futura da plataforma.
-
----
-
-## 22.1 Arquitetura Multi-Tenant
-
-Foi escolhido o modelo:
-
-Shared Database + Shared Schema + tenant_id.
-
-Motivos:
-
-- menor complexidade operacional;
-- facilidade de manutenção;
-- escalabilidade inicial;
-- compartilhamento da mesma infraestrutura;
-- isolamento lógico através das regras de domínio.
-
-A arquitetura foi preparada para crescimento futuro, permitindo evolução conforme a necessidade do produto.
-
----
-
-## 22.2 Utilização de UUID
-
-As entidades principais utilizam UUID como identificadores.
-
-Motivos:
-
-- maior segurança em APIs públicas;
-- evita exposição de IDs sequenciais;
-- facilita integrações futuras;
-- permite geração distribuída de identificadores.
-
----
-
-## 22.3 Uso do Flyway
-
-O controle do banco de dados é realizado através do Flyway.
-
-Motivos:
-
-- versionamento das alterações do banco;
-- histórico das evoluções estruturais;
-- previsibilidade entre ambientes;
-- segurança durante mudanças de schema.
-
-Nenhuma alteração estrutural do banco deve ser realizada manualmente em ambientes controlados.
-
----
-
-## 22.4 Separação por Camadas
-
-A arquitetura separa responsabilidades entre:
-
-- Controller;
-- Service;
-- Repository;
-- Domain;
-- DTO.
-
-Essa separação permite:
-
-- melhor organização;
-- testes mais simples;
-- evolução independente das camadas;
-- redução de acoplamento.
-
----
-
-## 22.5 Uso de DTOs
-
-Os DTOs foram adotados para evitar exposição direta das entidades de domínio.
-
-Benefícios:
-
-- controle dos contratos da API;
-- segurança dos dados;
-- facilidade de evolução;
-- separação entre persistência e comunicação externa.
-
----
-
-## 22.6 RBAC como Base de Segurança
-
-O controle inicial de acesso foi construído utilizando RBAC.
+O onboarding deverá garantir que um novo Tenant não fique sem administrador.
 
 Modelo:
 
-User → UserRole → Role
+Criar Tenant
+     ↓
+TRIAL
+     ↓
+Criar primeiro User
+     ↓
+ADMIN
+     ↓
+Criar UserRole
+     ↓
+Tenant pronto
 
-Essa decisão permite iniciar com uma estrutura simples e evoluir futuramente para permissões mais detalhadas.
+Essas operações deverão ocorrer dentro de uma transação única.
 
----
+Em caso de falha:
 
-## 22.7 Construção Incremental do Produto
+ROLLBACK
+10.1.4 — Endpoint de onboarding
 
-O TAGOX Flow está sendo desenvolvido seguindo uma abordagem incremental.
+O caso de uso será modelado antes da decisão final sobre o endpoint público.
 
-A prioridade inicial é construir o Core da plataforma:
+A arquitetura deverá permitir posteriormente:
 
-- organizações;
-- usuários;
-- segurança;
-- permissões;
-- infraestrutura.
+onboarding self-service;
+onboarding controlado pela TAGOX.
 
-Após a consolidação do Core, serão implementados módulos específicos das verticais de negócio.
+A regra de negócio deverá existir em uma camada de aplicação reutilizável, evitando duplicação.
 
----
+26. Decisão sobre Trial
 
+Foi decidido que:
 
-## 23. Funcionalidades Ainda Não Implementadas
+TRIAL é um estado funcional do Tenant e permite login.
 
-O TAGOX Flow encontra-se atualmente na fase de construção do Core arquitetural.
+Não serão implementados agora:
 
-As funcionalidades abaixo fazem parte do roadmap futuro e ainda não foram implementadas.
+duração fixa de 14 dias;
+trial_ends_at;
+job de expiração;
+limite de usuários;
+limite de recursos;
+cobrança;
+assinatura;
+suspensão automática.
 
----
+Essas regras serão definidas quando o modelo comercial do SaaS estiver formalizado.
 
-## 23.1 Segurança e Autenticação
+27. Decisões Arquiteturais
+27.1 Multi-Tenant
 
-Ainda serão implementados:
+Modelo:
 
-- autenticação de usuários;
-- Spring Security;
-- autenticação baseada em JWT;
-- controle de sessão;
-- recuperação de senha;
-- políticas avançadas de segurança.
+Shared Database
++
+Shared Schema
++
+tenant_id
+27.2 UUID
 
----
+Entidades principais utilizam UUID.
 
-## 23.2 Controle de Permissões
+Motivos:
 
-O modelo RBAC atual representa a fundação inicial.
+menor exposição de IDs sequenciais;
+integração;
+geração distribuída;
+melhor adequação a APIs públicas.
+27.3 Flyway
 
-Futuramente serão adicionados:
+Flyway é a fonte oficial de evolução estrutural do banco.
 
-- permissões específicas por recurso;
-- ações permitidas por módulo;
-- controle granular de acesso;
-- políticas por organização.
+Migrations aplicadas não devem ser modificadas.
 
----
+27.4 DTOs
 
-## 23.3 Módulos de Negócio
+Entidades JPA não devem ser utilizadas diretamente como contratos da API quando houver necessidade de DTO específico.
 
-Os módulos funcionais ainda serão desenvolvidos.
+27.5 RBAC
 
-Exemplos:
+Modelo inicial:
 
-- gestão de pacientes/clientes;
-- agenda;
-- prontuário;
-- documentos;
-- financeiro;
-- relatórios;
-- configurações específicas por vertical.
+User
+ ↓
+UserRole
+ ↓
+Role
+27.6 Segurança Multi-Tenant
 
----
+O tenantId não deve ser escolhido pelo cliente em operações autenticadas.
 
-## 23.4 Vertical Psicologia e Saúde
+O Tenant deve ser determinado pelo contexto confiável da autenticação.
 
-A primeira vertical prevista para evolução do TAGOX Flow será a área de psicologia e saúde.
+27.7 Onboarding
 
-Essa implementação utilizará o Core existente:
+O primeiro usuário de um novo Tenant deverá ser ADMIN.
 
-- Tenant;
-- Usuários;
-- Segurança;
-- Permissões;
-- Estrutura SaaS.
+Tenant + primeiro ADMIN devem ser criados atomicamente.
 
-O objetivo é criar uma solução especializada sem comprometer a reutilização da arquitetura para outras verticais.
+28. Funcionalidades Ainda Não Implementadas
 
----
+Após a conclusão do Core atual, ainda fazem parte do roadmap:
 
+Onboarding
+onboarding completo;
+primeiro ADMIN;
+fluxo público/controlado;
+regras de Trial.
+Permissões avançadas
+permissões por recurso;
+permissões por módulo;
+controle granular.
+Módulos de negócio
+clientes/pacientes;
+agenda;
+atendimentos;
+prontuário;
+documentos;
+financeiro;
+relatórios;
+configurações.
 
-## 24. Próximas Etapas
+Os módulos exatos serão definidos antes da implementação da primeira vertical.
 
-Após a consolidação da fundação arquitetural, as próximas etapas do desenvolvimento do TAGOX Flow serão realizadas de forma incremental.
+29. Primeira Vertical — Psicologia e Saúde
 
----
+A primeira vertical planejada para evolução comercial do TAGOX Flow é psicologia e saúde.
 
-## 24.1 Revisão da Fundação Atual
+A vertical utilizará o Core já desenvolvido:
 
-Antes da expansão dos módulos, será realizada uma revisão técnica dos componentes existentes:
+Tenant
+User
+Role
+RBAC
+Authentication
+Authorization
+Multi-Tenant
 
-- validação das migrations;
-- revisão das entidades JPA;
-- validação das regras multi-tenant;
-- revisão das constraints do banco;
-- melhoria dos testes automatizados.
+Os módulos específicos serão construídos sobre essa fundação.
 
----
+A arquitetura deverá permanecer reutilizável para futuras verticais.
 
-## 24.2 Implementação da Segurança
+30. Roadmap Oficial
+Fase 1 — Fundação SaaS
+Etapa 1 — Tenant
 
-A próxima grande evolução técnica será a implementação da camada de segurança.
+✅ Concluída
 
-Planejado:
+Etapa 2 — User Base
 
-- Spring Security;
-- autenticação JWT;
-- controle de acesso autenticado;
-- proteção dos endpoints;
-- integração com RBAC.
+✅ Concluída
 
----
+Etapa 3 — Exceptions
 
-## 24.3 Evolução do Controle de Permissões
+✅ Concluída
 
-O modelo atual User → UserRole → Role será expandido para suportar:
+Etapa 4 — PostgreSQL + Flyway
 
-- permissões por recurso;
-- permissões por módulo;
-- regras específicas por organização;
-- controle granular de funcionalidades.
+✅ Concluída
 
----
+Etapa 5 — JWT
 
-## 24.4 Construção dos Módulos de Negócio
+✅ Concluída
 
-Após a consolidação do Core, serão iniciados os módulos específicos da primeira vertical:
+Etapa 6 — Authentication
 
-TAGOX Flow Psicologia e Saúde.
+✅ Concluída
 
-A implementação utilizará a base existente da plataforma.
+Etapa 7 — RBAC Base
 
----
+✅ Concluída
 
+Etapa 8 — Tenant via JWT
 
-## 25. Roadmap
+✅ Concluída
 
-O roadmap do TAGOX Flow está organizado em fases evolutivas, permitindo crescimento sustentável da plataforma.
+Etapa 9 — Isolamento HTTP
 
----
+✅ Concluída
 
-## Fase 1 — Core da Plataforma (Atual)
+Etapa 10 — Autorização RBAC
 
-Objetivo:
+✅ Concluída
 
-Construção da fundação SaaS.
+Etapa 10.1 — Fundação de Onboarding
 
-Status:
+🔜 Próxima
 
-Em desenvolvimento.
+31. Fase 2 — Módulos de Negócio
+Etapa 11 — Módulo de negócio inicial
 
-Entregas:
+🔜
 
-- arquitetura multi-tenant;
-- gerenciamento de organizações;
-- usuários;
-- RBAC inicial;
-- persistência;
-- testes automatizados;
-- estrutura backend.
+Processo obrigatório:
 
----
+AUDITAR
+ ↓
+DEFINIR
+ ↓
+MODELAR
+ ↓
+MIGRATION
+ ↓
+IMPLEMENTAR
+ ↓
+TESTAR
+ ↓
+VALIDAR ISOLAMENTO
+ ↓
+REGISTRAR
+
+Nenhum módulo será criado sem definição clara de suas regras de negócio.
 
-## Fase 2 — Segurança e Identidade
+32. Etapa 12 — API Completa
 
-Objetivo:
+Após os módulos principais:
 
-Implementar controle seguro de acesso à plataforma.
+endpoints;
+DTOs;
+validações;
+paginação;
+filtros;
+autorização;
+tratamento de erros;
+isolamento;
+documentação.
+33. Etapa 13 — Frontend
 
-Entregas:
+Frontend:
 
-- autenticação;
-- JWT;
-- Spring Security;
-- autorização baseada em permissões;
-- proteção completa dos endpoints.
+React
++
+TypeScript
 
----
-
-## Fase 3 — TAGOX Flow Psicologia e Saúde
-
-Objetivo:
-
-Construir a primeira vertical de negócio utilizando o Core existente.
-
-Possíveis módulos:
-
-- pacientes/clientes;
-- agenda;
-- atendimento;
-- prontuário;
-- documentos;
-- relatórios;
-- gestão operacional.
-
----
-
-## Fase 4 — Expansão para Novas Verticais
-
-A arquitetura foi preparada para permitir expansão futura.
-
-Possíveis verticais:
-
-- medicina;
-- jurídico;
-- outros serviços profissionais.
-
-A estratégia é reutilizar o Core da plataforma e criar módulos específicos por segmento.
-
----
-
-## Fase 5 — Evolução SaaS
-
-Possíveis evoluções futuras:
-
-- planos e assinaturas;
-- cobrança recorrente;
-- marketplace de integrações;
-- relatórios avançados;
-- recursos de inteligência e automação.
-
----
-
-
-## 26. Considerações Finais
-
-O TAGOX Flow está sendo desenvolvido com foco em uma arquitetura sólida, segura e preparada para crescimento.
-
-A construção inicial prioriza a criação de um Core confiável, estabelecendo as bases necessárias para uma plataforma SaaS multi-tenant.
-
-Os principais pilares arquiteturais definidos são:
-
-- isolamento de dados entre organizações;
-- organização por domínio;
-- separação clara de responsabilidades;
-- controle de acesso estruturado;
-- versionamento seguro do banco de dados;
-- testes automatizados;
-- evolução incremental da plataforma.
-
-As decisões arquiteturais registradas neste documento devem servir como referência para futuras implementações.
-
-Novos módulos e funcionalidades deverão respeitar os princípios estabelecidos:
-
-- segurança;
-- escalabilidade;
-- reutilização;
-- manutenção simplificada;
-- evolução sustentável.
-
-O TAGOX Flow representa a base tecnológica para construção de soluções especializadas em diferentes verticais profissionais, iniciando pela área de psicologia e saúde e permitindo expansão futura para novos segmentos.
-
-Este documento deve permanecer atualizado conforme novas decisões técnicas forem tomadas durante a evolução do produto.
-
----
-
+O frontend será desenvolvido depois que o Core da API estiver suficientemente estável.
+
+Principais fluxos:
+
+Login
+ ↓
+Dashboard
+ ↓
+Tenant
+ ↓
+Usuários
+ ↓
+Roles
+ ↓
+Módulos
+34. Etapa 14 — Integração Frontend + Backend
+
+Serão integrados:
+
+autenticação;
+JWT;
+chamadas API;
+tratamento de 401;
+tratamento de 403;
+Tenant;
+usuários;
+roles;
+módulos.
+35. Etapa 15 — E2E
+
+Serão testados fluxos completos:
+
+Onboarding
+ ↓
+Login
+ ↓
+Dashboard
+ ↓
+CRUD
+ ↓
+Autorização
+ ↓
+Isolamento
+ ↓
+Logout
+
+Também serão executados cenários negativos.
+
+Exemplo:
+
+Tenant A
+   X
+Tenant B
+36. Etapa 16 — Segurança e Preparação para Produção
+
+Antes do lançamento serão revisados:
+
+JWT secret;
+variáveis de ambiente;
+credenciais;
+CORS;
+CSRF conforme arquitetura final;
+headers de segurança;
+rate limiting;
+logs;
+tratamento de exceções;
+exposição de informações;
+permissões;
+PostgreSQL;
+migrations;
+backups;
+recuperação de desastre;
+HTTPS;
+observabilidade;
+auditoria;
+configurações específicas de produção.
+
+Durante o desenvolvimento já foi identificado o aviso de senha de segurança gerada pelo Spring Boot.
+
+Esse comportamento será eliminado ou devidamente configurado antes da produção.
+
+37. Etapa 17 — Homologação e Deploy
+
+O lançamento não será feito diretamente do ambiente de desenvolvimento.
+
+O fluxo planejado será:
+
+Desenvolvimento
+      ↓
+Testes automatizados
+      ↓
+Integração
+      ↓
+E2E
+      ↓
+Revisão de segurança
+      ↓
+Homologação
+      ↓
+Validação final
+      ↓
+Produção
+38. Critério de Prontidão para Produção
+
+O TAGOX Flow não será considerado pronto apenas porque a aplicação inicia ou porque os testes unitários passam.
+
+Antes do lançamento, deverá existir:
+
+Core
++
+Multi-Tenant
++
+Authentication
++
+Authorization
++
+Onboarding
++
+Business Modules
++
+API
++
+Frontend
++
+Integration
++
+E2E
++
+Security
++
+Observability
++
+Backup
++
+Production Configuration
++
+Deployment
+
+Todos os componentes críticos deverão estar validados.
+
+39. Critério de Qualidade por Etapa
+
+O desenvolvimento seguirá o ciclo:
+
+AUDITAR
+ ↓
+DECIDIR
+ ↓
+IMPLEMENTAR
+ ↓
+TESTAR
+ ↓
+VALIDAR
+ ↓
+REGISTRAR
+ ↓
+AVANÇAR
+
+Não avançaremos simplesmente porque uma funcionalidade "parece funcionar".
+
+Cada etapa deverá possuir:
+
+implementação;
+testes;
+validação;
+decisão documentada;
+commit;
+push quando apropriado.
+40. Estado Atual Exato do Projeto
+
+Neste momento:
+
+┌────────────────────────────────────────────┐
+│             TAGOX FLOW BACKEND             │
+├────────────────────────────────────────────┤
+│ Tenant                         ✅           │
+│ User Base                      ✅           │
+│ Exceptions                     ✅           │
+│ PostgreSQL                     ✅           │
+│ Flyway V1–V5                   ✅           │
+│ JWT                            ✅           │
+│ Authentication                 ✅           │
+│ RBAC Base                      ✅           │
+│ Tenant via JWT                 ✅           │
+│ HTTP Isolation                 ✅           │
+│ Authorization RBAC             ✅           │
+│ Testes automatizados           ✅           │
+│ Validação HTTP real            ✅           │
+│ Onboarding Foundation          🔜           │
+│ Business Modules               🔜           │
+│ Complete API                   🔜           │
+│ React + TypeScript             🔜           │
+│ Frontend/Backend Integration   🔜           │
+│ E2E                            🔜           │
+│ Production Security            🔜           │
+│ Homologation                   🔜           │
+│ Deploy                         🔜           │
+└────────────────────────────────────────────┘
+41. Último Estado Validado
+
+Última execução da suíte:
+
+Tests run: 48
+Failures: 0
+Errors: 0
+Skipped: 0
+
+BUILD SUCCESS
+
+Último commit:
+
+749f565 feat: implementa autorizacao RBAC
+
+Branch:
+
+main
+
+O commit foi publicado no GitHub.
+
+42. Próxima Ação
+
+A próxima atividade oficial é:
+
+Etapa 10.1.1 — Auditar o schema real da tabela role.
+
+Antes de criar a V6 serão verificados:
+
+colunas;
+tipos;
+chave primária;
+constraints;
+índices;
+unicidade;
+registros existentes;
+compatibilidade com os dados atuais.
+
+Depois:
+
+Auditar role
+ ↓
+Definir V6
+ ↓
+Criar migration
+ ↓
+Testar Flyway
+ ↓
+Ajustar login TRIAL
+ ↓
+Modelar onboarding
+ ↓
+Criar primeiro ADMIN transacional
+ ↓
+Testar onboarding
+ ↓
+Commit
+ ↓
+Push
+ ↓
+Concluir Etapa 10.1
+ ↓
+Etapa 11
+43. Visão de Longo Prazo
+
+O TAGOX Flow não está sendo construído como uma aplicação isolada para uma única empresa.
+
+A arquitetura está sendo preparada como uma plataforma SaaS da TAGOX Tech.
+
+O Core deverá permitir:
+
+TAGOX Flow Core
+       │
+       ├── Psicologia / Saúde
+       │
+       ├── Medicina
+       │
+       ├── Jurídico
+       │
+       └── Outras verticais
+
+Cada vertical poderá possuir seus próprios módulos e regras específicas, mantendo a fundação comum de:
+
+Tenants;
+usuários;
+autenticação;
+autorização;
+RBAC;
+segurança;
+isolamento;
+infraestrutura;
+auditoria;
+integrações.
+44. Considerações Finais
+
+O TAGOX Flow já possui uma fundação importante do produto.
+
+As etapas iniciais estabeleceram:
+
+arquitetura multi-tenant;
+persistência;
+Flyway;
+usuários;
+JWT;
+autenticação;
+RBAC;
+autorização;
+isolamento entre Tenants;
+testes automatizados;
+validação HTTP real.
+
+A Etapa 10 consolidou a autorização real através do Spring Security.
+
+O próximo objetivo é fechar a Fundação de Onboarding, eliminando as duas inconsistências identificadas durante a validação:
+
+roles padrão dependerem de inserção manual;
+Tenant TRIAL não conseguir autenticar.
+
+Depois disso, o projeto estará preparado para entrar na construção dos módulos de negócio.
+
+A evolução continuará seguindo uma regra fundamental:
+
+Primeiro construir uma fundação segura e consistente; depois construir funcionalidades sobre ela.
+
+O objetivo final é entregar um TAGOX Flow que não apenas funcione em desenvolvimento, mas possua as condições técnicas necessárias para evoluir até um produto SaaS real, seguro, multi-tenant, modular e preparado para produção.
+
+Estado oficial do documento
+
+Última atualização: 26/09/2026
+Etapa concluída: 10 — Autorização RBAC
+Próxima etapa: 10.1 — Fundação de Onboarding
+Último commit: 749f565
+Testes: 48/48 passando
+Status do projeto: Fundação de segurança concluída; preparação do onboarding em andamento.
