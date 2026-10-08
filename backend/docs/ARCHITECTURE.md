@@ -840,7 +840,9 @@ Working tree ficou limpa antes do push.
 Essa etapa estabeleceu a autorização real da plataforma.
 
 25. Etapa 10.1 — Fundação de Onboarding
-Status: DEFINIDA — PRÓXIMA ETAPA
+
+Status: IMPLEMENTAÇÃO CONCLUÍDA — EM REVISÃO FINAL
+
 
 Antes dos módulos de negócio, será concluída a fundação de onboarding.
 
@@ -1385,60 +1387,56 @@ O commit foi publicado no GitHub.
 
 42. Próxima Ação
 
-A próxima atividade oficial é:
+A próxima atividade oficial é concluir a revisão e a documentação da Etapa 10.1 — Fundação de Onboarding.
 
-Etapa 10.1.3 — Primeiro ADMIN.
+### Implementações concluídas
 
-A sequência planejada é:
+* DTOs de requisição e resposta do onboarding.
+* `OnboardingService` para orquestrar a criação inicial.
+* Endpoint público `POST /api/onboarding`.
+* Criação do Tenant com status `TRIAL`.
+* Criação do primeiro usuário com status `ATIVO`.
+* Atribuição da role `ADMIN` ao primeiro usuário.
+* Persistência da associação `UserRole`.
+* Transação única para garantir consistência e rollback em caso de falha.
+* Validação dos dados de entrada.
+* Restrição de acesso ao endpoint `POST /api/tenants`, que exige autenticação.
+* Testes automatizados para o cadastro, validação, associação da role e rollback.
 
-Modelar DTOs do onboarding
-↓
-Implementar OnboardingService
-↓
-Implementar POST /api/onboarding
-↓
-Criar Tenant com status TRIAL
-↓
-Criar primeiro User com status ATIVO
-↓
-Atribuir role ADMIN
-↓
-Criar UserRole
-↓
-Garantir transação única
-↓
-Testar rollback
-↓
-Testar isolamento entre Tenants
-↓
-Testar autorização do primeiro ADMIN
-↓
-Validar fluxo completo de onboarding
-↓
-Atualizar documentação
-↓
-Commit
-↓
-Push
-↓
-Concluir Etapa 10.1
-↓
-Etapa 11
+### Validação automatizada
 
-A V6 já foi criada e publicada.
+A suíte completa de testes foi executada com sucesso:
+
+* 52 testes executados.
+* 0 falhas.
+* 0 erros.
+* Build concluído com sucesso.
+
+### Próximas atividades
+
+1. Revisar as alterações do código e da documentação.
+2. Conferir o diff completo e o estado do Git.
+3. Atualizar o estado oficial da arquitetura.
+4. Executar a validação final.
+5. Criar o commit da Etapa 10.1.
+6. Publicar as alterações no GitHub após a revisão.
+7. Avançar para a Etapa 11, conforme o planejamento arquitetural.
 
 As migrations V1–V6 permanecem imutáveis.
 
-Qualquer nova alteração de banco deverá ser realizada através de uma nova migration Flyway, sem modificar as migrations já aplicadas.
+Qualquer nova alteração de banco de dados deverá ser realizada através de uma nova migration Flyway, sem modificar as migrations já aplicadas.
 
-A regra de autenticação definida para os estados do Tenant permanece:
+### Regras de autenticação do Tenant
 
-TRIAL      → login permitido
-ATIVO      → login permitido
-SUSPENSO   → login bloqueado
-CANCELADO  → login bloqueado
+A autenticação deverá respeitar o estado do Tenant:
 
-O próximo objetivo é implementar o fluxo transacional de onboarding, garantindo que um novo Tenant seja criado com seu primeiro usuário ADMIN de forma consistente e que, em caso de falha, todas as operações sejam revertidas através de rollback.
+* `TRIAL` → login permitido.
+* `ATIVO` → login permitido.
+* `SUSPENSO` → login bloqueado.
+* `CANCELADO` → login bloqueado.
+
+
+A Etapa 10.1 somente será considerada concluída após a revisão final, a atualização da documentação e a publicação das alterações.
 
 43. Visão de Longo Prazo
 
@@ -1518,11 +1516,32 @@ O objetivo final é entregar um TAGOX Flow que não apenas funcione em desenvolv
 
 Estado oficial do documento
 
-Última atualização: 27/09/2026
+Última atualização: 08/10/2026
+
 Etapa concluída: 10 — Autorização RBAC
-Etapa 10.1: Fundação de Onboarding em andamento
-Última subetapa concluída: 10.1.2 — TRIAL funcional
-Próxima subetapa: 10.1.3 — Primeiro ADMIN
-Último commit: a6daa3c docs: atualiza arquitetura e onboarding
-Testes registrados: 49/49 passando
-Status do projeto: Core de segurança concluído; V6 publicada; fundação de onboarding em andamento.
+
+Etapa 10.1: Fundação de Onboarding — implementação concluída, em revisão final.
+
+Subetapas concluídas:
+
+* 10.1.1 — Roles padrão garantidas pela migration V6.
+* 10.1.2 — TRIAL funcional.
+* 10.1.3 — Primeiro ADMIN criado transacionalmente.
+* 10.1.4 — Endpoint público POST /api/onboarding implementado.
+
+Segurança:
+
+* POST /api/onboarding — público.
+* POST /api/auth/login — público.
+* POST /api/tenants — exige autenticação.
+* Demais regras de autenticação e autorização preservadas.
+
+Testes registrados: 52/52 passando; 0 falhas e 0 erros.
+
+Último commit publicado antes das alterações atuais: 19c0a70 feat: habilita autenticacao de tenant em trial.
+
+Último commit registrado na documentação: a6daa3c docs: atualiza arquitetura e onboarding.
+
+Estado atual do trabalho: onboarding implementado e validado pela suíte automatizada; revisão final do código, documentação e diff pendente antes do commit e do push.
+
+Próxima atividade: concluir a revisão da Etapa 10.1 e, após a validação final, publicar as alterações no GitHub.

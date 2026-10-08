@@ -5,15 +5,14 @@ import com.tagox.flow.domain.user.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -35,30 +34,25 @@ class TenantControllerTest {
         tenantRepository.deleteAll();
     }
 
-
     @Test
-    void deveCriarTenantViaApi() throws Exception {
+    void deveImpedirCriacaoDeTenantSemAutenticacao() throws Exception {
 
         String json = """
-                {
-                    "tipoPessoa": "JURIDICA",
-                    "documento": "11222333000181",
-                    "nome": "TAGOX Flow Tecnologia LTDA",
-                    "nomeFantasia": "TAGOX Flow",
-                    "slug": "tagox-flow-api"
-                }
-                """;
-
+            {
+                "tipoPessoa": "JURIDICA",
+                "documento": "11222333000181",
+                "nome": "TAGOX Flow Tecnologia LTDA",
+                "nomeFantasia": "TAGOX Flow",
+                "slug": "tagox-flow-api"
+            }
+            """;
 
         mockMvc.perform(
                         post("/api/tenants")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(json)
                 )
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.nome")
-                        .value("TAGOX Flow Tecnologia LTDA"))
-                .andExpect(jsonPath("$.status")
-                        .value("TRIAL"));
+                .andExpect(status().isForbidden());
     }
+
 }
