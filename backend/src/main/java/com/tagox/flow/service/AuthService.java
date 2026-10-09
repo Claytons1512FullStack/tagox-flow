@@ -5,9 +5,10 @@ import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
+import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.dto.auth.LoginRequest;
-import com.tagox.flow.security.JwtService;
 import com.tagox.flow.exception.ResourceNotFoundException;
+import com.tagox.flow.security.JwtService;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,7 @@ public class AuthService {
 
         if (tenant.getStatus() == TenantStatus.SUSPENSO
                 || tenant.getStatus() == TenantStatus.CANCELADO) {
+
             throw new ResourceNotFoundException(
                     "Tenant não está disponível para autenticação"
             );
@@ -63,10 +65,17 @@ public class AuthService {
                 )
         );
 
+        if (user.getStatus() != UserStatus.ATIVO) {
+            throw new ResourceNotFoundException(
+                    "Usuário não está disponível para autenticação"
+            );
+        }
+
         if (!passwordEncoder.matches(
                 request.getSenha(),
                 user.getSenhaHash()
         )) {
+
             throw new ResourceNotFoundException(
                     "Credenciais inválidas"
             );

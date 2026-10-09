@@ -1,6 +1,12 @@
 package com.tagox.flow.security;
 
 import com.tagox.flow.domain.role.RoleType;
+import com.tagox.flow.domain.tenant.Tenant;
+import com.tagox.flow.domain.tenant.TenantRepository;
+import com.tagox.flow.domain.tenant.TenantStatus;
+import com.tagox.flow.domain.user.User;
+import com.tagox.flow.domain.user.UserRepository;
+import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.domain.userrole.UserRoleRepository;
 
 import jakarta.servlet.FilterChain;
@@ -15,19 +21,26 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRoleRepository userRoleRepository;
+    private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            UserRoleRepository userRoleRepository
+            UserRoleRepository userRoleRepository,
+            UserRepository userRepository,
+            TenantRepository tenantRepository
     ) {
         this.jwtService = jwtService;
         this.userRoleRepository = userRoleRepository;
+        this.userRepository = userRepository;
+        this.tenantRepository = tenantRepository;
     }
 
     @Override
@@ -49,15 +62,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authorization.substring(7);
 
         try {
-
             UUID userId = jwtService.extrairUserId(token);
             UUID tenantId = jwtService.extrairTenantId(token);
 
-            AuthenticatedUser authenticatedUser =
-                    new AuthenticatedUser(
+            Optional<User> userOptional =
+                    userRepository.findByIdAndTenantId(
                             userId,
                             tenantId
                     );
+
+            if (userOptional.isEmpty()) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            User user = userOptional.get();
+
+            if (user.getStatus() != UserStatus.ATIVO) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            Optional<Tenant> tenantOptional =
+                    tenantRepository.findById(tenantId);
+
+            if (tenantOptional.isEmpty()) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+
+            Tenant tenant = tenantOptional.get();
+            TenantStatus tenantStatus = tenant.getStatus();
+
+            if (tenantStatus == TenantStatus.SUSPENSO ||
+                    tenantStatus == TenantStatus.CANCELADO) {
+
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
 
             List<RoleType> roleTypes =
                     userRoleRepository.findRoleTypesByUsuarioId(userId);
@@ -69,6 +115,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             )
                     )
                     .toList();
+
+            AuthenticatedUser authenticatedUser =
+                    new AuthenticatedUser(
+                            userId,
+                            tenantId
+                    );
 
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(
@@ -82,9 +134,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     .setAuthentication(authentication);
 
         } catch (RuntimeException ex) {
-
-            SecurityContextHolder
-                    .clearContext();
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

@@ -6,6 +6,7 @@ import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
+import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.dto.auth.LoginRequest;
 import com.tagox.flow.dto.user.CreateUserRequest;
 import com.tagox.flow.exception.ResourceNotFoundException;
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
@@ -43,6 +45,9 @@ class AuthServiceTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     private Tenant tenant;
 
@@ -218,6 +223,50 @@ class AuthServiceTest {
     }
 
     @Test
+    void deveRejeitarUsuarioInativo() {
+
+        criarUsuarioComStatus(
+                "Usuario Inativo",
+                "inativo@teste.com",
+                "senha-inativo",
+                UserStatus.INATIVO
+        );
+
+        LoginRequest request = criarLoginRequest(
+                "inativo@teste.com",
+                "senha-inativo"
+        );
+
+        assertThatThrownBy(() ->
+                authService.autenticar(request)
+        )
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Usuário não está disponível para autenticação");
+    }
+
+    @Test
+    void deveRejeitarUsuarioBloqueado() {
+
+        criarUsuarioComStatus(
+                "Usuario Bloqueado",
+                "bloqueado@teste.com",
+                "senha-bloqueado",
+                UserStatus.BLOQUEADO
+        );
+
+        LoginRequest request = criarLoginRequest(
+                "bloqueado@teste.com",
+                "senha-bloqueado"
+        );
+
+        assertThatThrownBy(() ->
+                authService.autenticar(request)
+        )
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessage("Usuário não está disponível para autenticação");
+    }
+
+    @Test
     void deveManterIsolamentoEntreTenants() {
 
         User usuarioA = criarUsuario(
@@ -296,5 +345,38 @@ class AuthServiceTest {
                 request,
                 tenant.getId()
         );
+    }
+
+    private User criarUsuarioComStatus(
+            String nome,
+            String email,
+            String senha,
+            UserStatus status
+    ) {
+
+        User usuario = new User(
+                UUID.randomUUID(),
+                tenant,
+                nome,
+                email.toLowerCase(),
+                passwordEncoder.encode(senha),
+                status
+        );
+
+        return userRepository.save(usuario);
+    }
+
+    private LoginRequest criarLoginRequest(
+            String email,
+            String senha
+    ) {
+
+        LoginRequest request = new LoginRequest();
+
+        request.setTenantSlug(tenant.getSlug());
+        request.setEmail(email);
+        request.setSenha(senha);
+
+        return request;
     }
 }

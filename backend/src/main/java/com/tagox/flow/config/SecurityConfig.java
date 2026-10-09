@@ -1,5 +1,7 @@
 package com.tagox.flow.config;
 
+import com.tagox.flow.domain.tenant.TenantRepository;
+import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.userrole.UserRoleRepository;
 import com.tagox.flow.security.JwtAuthenticationFilter;
 import com.tagox.flow.security.JwtService;
@@ -18,18 +20,21 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 public class SecurityConfig {
 
-
     @Bean
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtService jwtService,
-            UserRoleRepository userRoleRepository
+            UserRoleRepository userRoleRepository,
+            UserRepository userRepository,
+            TenantRepository tenantRepository
     ) throws Exception {
 
         JwtAuthenticationFilter jwtAuthenticationFilter =
                 new JwtAuthenticationFilter(
                         jwtService,
-                        userRoleRepository
+                        userRoleRepository,
+                        userRepository,
+                        tenantRepository
                 );
 
         http
@@ -60,5 +65,4 @@ public class SecurityConfig {
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-
 }

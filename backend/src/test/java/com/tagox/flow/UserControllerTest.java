@@ -5,7 +5,9 @@ import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
+import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
+import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.domain.userrole.UserRoleRepository;
 import com.tagox.flow.security.JwtService;
 
@@ -17,6 +19,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -45,10 +48,15 @@ class UserControllerTest {
     @Autowired
     private JwtService jwtService;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     @MockitoBean
     private UserRoleRepository userRoleRepository;
 
     private Tenant tenant;
+
+    private UUID userId;
 
     private String token;
 
@@ -71,7 +79,13 @@ class UserControllerTest {
 
         tenantRepository.save(tenant);
 
-        UUID userId = UUID.randomUUID();
+        userId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                userId,
+                tenant,
+                "admin@teste.com"
+        );
 
         token = jwtService.gerarToken(
                 userId,
@@ -80,6 +94,24 @@ class UserControllerTest {
 
         when(userRoleRepository.findRoleTypesByUsuarioId(userId))
                 .thenReturn(List.of(RoleType.ADMIN));
+    }
+
+    private User criarUsuarioAutenticavel(
+            UUID id,
+            Tenant tenantUsuario,
+            String email
+    ) {
+
+        User usuario = new User(
+                id,
+                tenantUsuario,
+                "Usuario de Teste",
+                email,
+                "senha-hash-teste",
+                UserStatus.ATIVO
+        );
+
+        return userRepository.save(usuario);
     }
 
     @Test
@@ -152,18 +184,15 @@ class UserControllerTest {
     }
 
     @Test
-    void deveFalharQuandoTenantNaoExiste() throws Exception {
+    void deveRejeitarTokenDeTenantInexistente() throws Exception {
 
         UUID tenantInexistente = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
+        UUID usuarioInexistente = UUID.randomUUID();
 
         String tokenTenantInexistente = jwtService.gerarToken(
-                userId,
+                usuarioInexistente,
                 tenantInexistente
         );
-
-        when(userRoleRepository.findRoleTypesByUsuarioId(userId))
-                .thenReturn(List.of(RoleType.ADMIN));
 
         String json = """
                 {
@@ -182,9 +211,7 @@ class UserControllerTest {
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(json)
                 )
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message")
-                        .value("Tenant não encontrado"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -215,6 +242,18 @@ class UserControllerTest {
 
         UUID userIdA = UUID.randomUUID();
         UUID userIdB = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                userIdA,
+                tenantA,
+                "admin@empresa-a.com"
+        );
+
+        criarUsuarioAutenticavel(
+                userIdB,
+                tenantB,
+                "admin@empresa-b.com"
+        );
 
         String tokenA = jwtService.gerarToken(
                 userIdA,
@@ -288,20 +327,26 @@ class UserControllerTest {
     @Test
     void profissionalNaoPodeCriarUsuario() throws Exception {
 
-        UUID userId = UUID.randomUUID();
+        UUID profissionalId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                profissionalId,
+                tenant,
+                "profissional@teste.com"
+        );
 
         String profissionalToken = jwtService.gerarToken(
-                userId,
+                profissionalId,
                 tenant.getId()
         );
 
-        when(userRoleRepository.findRoleTypesByUsuarioId(userId))
+        when(userRoleRepository.findRoleTypesByUsuarioId(profissionalId))
                 .thenReturn(List.of(RoleType.PROFISSIONAL));
 
         String json = """
                 {
                     "nome": "Usuario Profissional",
-                    "email": "profissional@teste.com",
+                    "email": "novo-profissional@teste.com",
                     "senha": "senha-teste"
                 }
                 """;
@@ -321,20 +366,26 @@ class UserControllerTest {
     @Test
     void assistenteNaoPodeCriarUsuario() throws Exception {
 
-        UUID userId = UUID.randomUUID();
+        UUID assistenteId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                assistenteId,
+                tenant,
+                "assistente@teste.com"
+        );
 
         String assistenteToken = jwtService.gerarToken(
-                userId,
+                assistenteId,
                 tenant.getId()
         );
 
-        when(userRoleRepository.findRoleTypesByUsuarioId(userId))
+        when(userRoleRepository.findRoleTypesByUsuarioId(assistenteId))
                 .thenReturn(List.of(RoleType.ASSISTENTE));
 
         String json = """
                 {
                     "nome": "Usuario Assistente",
-                    "email": "assistente@teste.com",
+                    "email": "novo-assistente@teste.com",
                     "senha": "senha-teste"
                 }
                 """;
@@ -347,6 +398,114 @@ class UserControllerTest {
                                 )
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(json)
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deveBloquearTokenQuandoUsuarioForBloqueado() throws Exception {
+
+        jdbcTemplate.update(
+                "UPDATE usuario SET status = ? WHERE id = ?",
+                UserStatus.BLOQUEADO.name(),
+                userId
+        );
+
+        mockMvc.perform(
+                        post("/api/users")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + token
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "nome": "Novo Usuario",
+                                            "email": "novo@teste.com",
+                                            "senha": "senha-teste"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deveBloquearTokenQuandoUsuarioForInativado() throws Exception {
+
+        jdbcTemplate.update(
+                "UPDATE usuario SET status = ? WHERE id = ?",
+                UserStatus.INATIVO.name(),
+                userId
+        );
+
+        mockMvc.perform(
+                        post("/api/users")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + token
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "nome": "Novo Usuario",
+                                            "email": "novo@teste.com",
+                                            "senha": "senha-teste"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deveBloquearTokenQuandoTenantForSuspenso() throws Exception {
+
+        jdbcTemplate.update(
+                "UPDATE tenant SET status = ? WHERE id = ?",
+                TenantStatus.SUSPENSO.name(),
+                tenant.getId()
+        );
+
+        mockMvc.perform(
+                        post("/api/users")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + token
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "nome": "Novo Usuario",
+                                            "email": "novo@teste.com",
+                                            "senha": "senha-teste"
+                                        }
+                                        """)
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void deveBloquearTokenQuandoTenantForCancelado() throws Exception {
+
+        jdbcTemplate.update(
+                "UPDATE tenant SET status = ? WHERE id = ?",
+                TenantStatus.CANCELADO.name(),
+                tenant.getId()
+        );
+
+        mockMvc.perform(
+                        post("/api/users")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + token
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content("""
+                                        {
+                                            "nome": "Novo Usuario",
+                                            "email": "novo@teste.com",
+                                            "senha": "senha-teste"
+                                        }
+                                        """)
                 )
                 .andExpect(status().isForbidden());
     }
