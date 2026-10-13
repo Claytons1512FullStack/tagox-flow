@@ -1,1547 +1,2351 @@
-TAGOX Flow — Arquitetura e Evolução do Sistema
+# TAGOX Flow — Arquitetura e Evolução do Sistema
 
-Produto: TAGOX Flow
-Empresa: TAGOX Tech
-Repositório: Claytons1512FullStack/tagox-flow
-Branch principal: main
-Último commit: 0c0f031 feat: adiciona seed dos roles padrão
-Estado: Etapa 10 concluída e publicada; Etapa 10.1 — Fundação de Onboarding em andamento; roles padrão já garantidas por Flyway.
-1. Visão Geral
+**Produto:** TAGOX Flow
+**Empresa responsável:** TAGOX Tech
+**Repositório:** `Claytons1512FullStack/tagox-flow`
+**Branch principal:** `main`
+**Backend:** Java 21 + Spring Boot 4.1.1
+**Banco de dados:** PostgreSQL 18.6
+**Migrações:** Flyway
+**Frontend planejado:** React + TypeScript
+**Último commit local registrado:** `445f73e` — `fix: validate user and tenant status during authentication`
+**Último commit publicado registrado:** `697ef24` — `feat: implementa onboarding inicial do tenant`
+**Última validação completa registrada (13/10/2026):** 58 testes aprovados, 0 falhas, 0 erros, 0 testes ignorados; BUILD SUCCESS.
+**Data de atualização da documentação:** 13/10/2026
+**Estado da documentação:** atualização em revisão; commit e publicação pendentes.
+
+> **Regra de atualização:** este documento registra a arquitetura, as decisões tomadas, as funcionalidades implementadas e as pendências conhecidas. Uma funcionalidade só deve ser considerada concluída quando sua implementação e sua validação correspondente tiverem sido verificadas.
+
+---
+
+# 1. Visão Geral
 
 O TAGOX Flow é uma plataforma SaaS desenvolvida pela TAGOX Tech para gestão de serviços profissionais.
 
-A plataforma está sendo construída com uma arquitetura modular e multi-tenant, preparada para atender diferentes verticais de serviços profissionais.
+O sistema está sendo construído com uma arquitetura modular, preparada para atender diferentes empresas e permitir a evolução progressiva de funcionalidades sem comprometer o isolamento dos dados.
 
-A primeira vertical considerada para evolução da plataforma é a área de psicologia e saúde, mantendo uma base arquitetural reutilizável para futuras verticais, como medicina, jurídico e outros serviços profissionais.
+O projeto utiliza Java e Spring Boot no backend, PostgreSQL como banco de dados relacional, Flyway para controle de alterações estruturais e autenticação baseada em JWT.
 
-O projeto está sendo desenvolvido de forma incremental, priorizando:
+A primeira fundação do sistema contempla:
 
-fundação arquitetural;
-arquitetura multi-tenant;
-isolamento de dados;
-gerenciamento de usuários;
-autenticação;
-autorização;
-RBAC;
-integridade do banco de dados;
-versionamento através de Flyway;
-testes automatizados;
-segurança;
-escalabilidade;
-preparação para produção.
+* Cadastro e gerenciamento de empresas contratantes.
+* Estrutura multi-tenant.
+* Cadastro de usuários.
+* Associação de usuários a empresas.
+* Controle de papéis e permissões por RBAC.
+* Autenticação por JWT.
+* Validação dos estados da empresa e do usuário durante o login.
+* Onboarding técnico de uma nova empresa.
+* Criação do primeiro usuário administrador.
+* Migrações versionadas do banco de dados.
+* Testes automatizados para os principais fluxos já desenvolvidos.
 
-O princípio adotado é construir primeiro um Core SaaS sólido, antes de acoplar os módulos funcionais específicos de cada vertical.
+O objetivo atual é consolidar a fundação técnica e de segurança antes de avançar para os módulos de negócio.
 
-2. Objetivo do TAGOX Flow
+---
 
-O objetivo do TAGOX Flow é fornecer uma plataforma centralizada para gestão de serviços profissionais, permitindo que diferentes organizações utilizem o mesmo sistema com segurança e isolamento de dados.
+# 2. Objetivo do Produto
 
-Cada organização cadastrada na plataforma representa um Tenant.
+O TAGOX Flow deverá permitir que empresas gerenciem seus processos e serviços em um ambiente centralizado, organizado e seguro.
 
-A arquitetura deve garantir:
+A plataforma será desenvolvida para suportar diferentes contextos profissionais por meio de módulos e recursos reutilizáveis.
 
-cada Tenant possui seus próprios usuários e dados;
-usuários possuem vínculo obrigatório com um Tenant;
-dados entre organizações permanecem isolados;
-usuários são autenticados;
-acessos são controlados por roles e regras de autorização;
-a plataforma pode evoluir para diferentes segmentos sem comprometer sua base.
+A primeira vertical planejada é a área de psicologia e saúde, sem limitar a arquitetura exclusivamente a esse segmento.
 
-O TAGOX Flow é concebido como um produto SaaS da TAGOX Tech.
+A evolução poderá contemplar outros segmentos, como:
 
-3. Modelo SaaS
+* Clínicas e consultórios.
+* Profissionais autônomos.
+* Escritórios jurídicos.
+* Empresas de serviços especializados.
+* Outras organizações que necessitem de gestão operacional.
 
-O TAGOX Flow utiliza o conceito de Software as a Service (SaaS).
+A arquitetura deve favorecer a reutilização de componentes, a separação de responsabilidades e a evolução independente dos módulos.
 
-Uma única aplicação atende múltiplas organizações clientes.
+---
 
-Cada organização possui uma representação lógica própria dentro da plataforma, denominada Tenant.
+# 3. Modelo SaaS
 
-O modelo adotado é:
+O TAGOX Flow segue o modelo Software as a Service (SaaS).
 
-Shared Database + Shared Schema + isolamento lógico por tenant_id.
+Cada empresa cadastrada será representada por um `Tenant`, que delimita seu contexto organizacional e seus dados.
 
-Diferentes organizações utilizam a mesma infraestrutura, porém os dados permanecem separados através das relações de Tenant existentes no domínio e das regras de aplicação.
+A estrutura deverá permitir que diferentes empresas utilizem a mesma aplicação sem acessar informações umas das outras.
 
-A regra fundamental da arquitetura é:
+O modelo comercial futuro poderá contemplar:
 
-Nenhum Tenant pode acessar ou manipular dados pertencentes a outro Tenant.
+* Planos de assinatura.
+* Contratos.
+* Pagamentos.
+* Módulos contratados.
+* Limites de utilização.
+* Permissões específicas por módulo.
+* Ativação, suspensão e cancelamento de contratos.
+* Regras comerciais por empresa.
 
-4. Arquitetura Multi-Tenant
-4.1 Estratégia adotada
+**Importante:** a existência do papel `ADMIN` não significa que a empresa contratou todos os módulos da plataforma.
 
-O TAGOX Flow utiliza:
+O controle de acesso por papel e o direito comercial de utilização de módulos são responsabilidades diferentes e deverão permanecer separados.
 
-Shared Database + Shared Schema + tenant_id
+No estado atual, a fundação de multi-tenancy, usuários, papéis, autenticação e onboarding está implementada. O sistema completo de assinaturas, pagamentos, contratos e habilitação comercial de módulos permanece pendente.
 
-A aplicação utiliza uma estrutura compartilhada de banco de dados para múltiplas organizações.
+---
 
-O isolamento ocorre através do relacionamento entre as entidades e o Tenant responsável pelos registros.
+# 4. Arquitetura Multi-Tenant
 
-Estrutura fundamental atual:
+A arquitetura multi-tenant permite que várias empresas utilizem a mesma aplicação, mantendo seus dados isolados.
 
-Tenant
- └── User
-      └── UserRole
-           └── Role
+O modelo atual associa usuários a uma empresa por meio do relacionamento entre `User` e `Tenant`.
 
-Os futuros módulos de negócio deverão respeitar o mesmo princípio de associação e isolamento.
+O JWT utilizado na autenticação contém os identificadores do usuário e do tenant.
 
-4.2 Conceito de Tenant
+O contexto de autenticação permite identificar:
 
-Tenant representa uma organização cliente dentro da plataforma.
+* Qual usuário está autenticado.
+* A qual empresa esse usuário pertence.
+* Qual é o contexto de tenant da requisição autenticada.
 
-Exemplos de organizações que poderão utilizar o TAGOX Flow:
+O backend deve utilizar esse contexto para aplicar as regras de acesso aos dados.
 
-clínicas;
-consultórios;
-escritórios;
-empresas de serviços profissionais.
+## Regras obrigatórias
 
-Cada Tenant possui seus próprios usuários e dados operacionais.
+1. Um usuário pertence a um tenant.
+2. Os dados de negócio devem respeitar o tenant proprietário.
+3. A identificação do tenant não deve depender exclusivamente de um valor enviado pelo cliente.
+4. O backend deve validar a autorização antes de permitir operações protegidas.
+5. Consultas e operações de negócio devem ser limitadas ao contexto autorizado.
+6. Um usuário de uma empresa não pode consultar ou alterar dados de outra empresa sem uma autorização administrativa explicitamente definida pela arquitetura.
+7. Os testes devem verificar o isolamento entre tenants.
 
-Estados atualmente definidos:
+A implementação já possui a base de identificação do tenant por JWT e testes de isolamento registrados.
 
-TRIAL;
-ATIVO;
-SUSPENSO;
-CANCELADO.
-Regra arquitetural definida
+A proteção precisa continuar sendo aplicada aos novos serviços, repositórios, controllers e módulos adicionados ao sistema.
 
-O estado TRIAL será considerado um estado funcional da plataforma e deverá permitir autenticação.
+---
 
-A política comercial de duração, limites e expiração do Trial será definida posteriormente.
+# 5. Stack Tecnológica
 
-4.3 Isolamento de Dados
+## Backend
 
-O isolamento entre organizações é um requisito fundamental da arquitetura.
+* Java 21.
+* Spring Boot 4.1.1.
+* Spring Web.
+* Spring Security.
+* Spring Data JPA.
+* Hibernate.
+* Bean Validation.
+* Autenticação JWT.
+* BCrypt para hash de senhas.
+* Maven.
 
-Na implementação atual, o usuário possui uma referência obrigatória para seu Tenant através do campo:
+## Banco de dados
 
-tenant_id
+* PostgreSQL 18.6.
+* Flyway para versionamento do schema.
+* Restrições relacionais e índices.
+* Chaves primárias e estrangeiras.
+* Restrições de unicidade.
 
-Um usuário pertencente a um Tenant não deve acessar informações pertencentes a outro Tenant.
+## Frontend planejado
 
-Essa regra já possui cobertura através de testes automatizados e validação HTTP real.
+* React.
+* TypeScript.
+* Integração com a API REST.
+* Gerenciamento de autenticação.
+* Interfaces adaptadas aos papéis e permissões dos usuários.
 
-4.4 Integridade Multi-Tenant
+O frontend ainda não deve ser considerado concluído.
 
-A integridade da associação entre usuários e Tenants é protegida pelo banco e pela aplicação.
+## Ambiente de desenvolvimento
 
-Regras atuais:
+O desenvolvimento do backend é realizado com IntelliJ IDEA e Windows Git Bash, utilizando o Maven Wrapper quando apropriado.
 
-usuário obrigatoriamente pertence a um Tenant;
-relacionamento protegido por chave estrangeira;
-não existe usuário normal sem organização vinculada;
-duplicidade de usuário é controlada por Tenant e email;
-o Tenant utilizado na criação de usuários autenticados é obtido do contexto do usuário autenticado;
-o cliente não pode escolher arbitrariamente o tenantId no corpo da requisição.
+---
 
-A restrição atual permite:
+# 6. Organização do Backend
 
+O backend deve manter uma separação clara entre domínio, persistência, serviços, controllers, DTOs e configuração.
+
+A organização segue os conceitos de arquitetura em camadas.
+
+Estrutura conceitual:
+
+```text
+backend/
+├── src/
+│   ├── main/
+│   │   ├── java/
+│   │   │   └── com/
+│   │   │       └── tagox/
+│   │   │           └── flow/
+│   │   │               ├── config/
+│   │   │               ├── controller/
+│   │   │               ├── domain/
+│   │   │               ├── dto/
+│   │   │               ├── exception/
+│   │   │               ├── security/
+│   │   │               └── service/
+│   │   └── resources/
+│   │       ├── db/
+│   │       │   └── migration/
+│   │       └── application.properties
+│   └── test/
+│       └── java/
+│           └── com/
+│               └── tagox/
+│                   └── flow/
+├── docs/
+│   └── ARCHITECTURE.md
+└── pom.xml
+```
+A estrutura acima representa a organização conceitual dos componentes. Os caminhos e pacotes concretos devem ser confirmados no código antes de qualquer reorganização.
+
+## Responsabilidades
+
+**Domain**
+
+Representa entidades, enums e regras diretamente relacionadas ao domínio.
+
+**Repository**
+
+Responsável pelo acesso e pela persistência dos dados.
+
+**Service**
+
+Concentra as regras de negócio e coordena operações que envolvem múltiplas entidades.
+
+**Controller**
+
+Recebe requisições HTTP, valida entradas e delega a execução aos serviços.
+
+**DTO**
+
+Define os dados aceitos nas requisições e retornados pelas APIs.
+
+**Security**
+
+Concentra os componentes de autenticação, JWT e configuração de segurança.
+
+**Exception**
+
+Centraliza exceções de domínio e mecanismos de tratamento de erros.
+
+A evolução deve preservar essa separação, evitando concentrar regras de negócio nos controllers.
+
+---
+
+# 7. Domínio Tenant
+
+`Tenant` representa a empresa ou organização cadastrada na plataforma.
+
+Cada tenant possui um contexto próprio dentro do sistema.
+
+O domínio contempla os conceitos de:
+
+* Identificador.
+* Dados cadastrais.
+* Documento.
+* Slug.
+* Status.
+* Datas de criação e atualização.
+
+Os campos concretos devem permanecer alinhados à entidade e às migrations existentes.
+
+## Status do tenant
+
+O enum `TenantStatus` contempla:
+
+* `TRIAL`
+* `ATIVO`
+* `SUSPENSO`
+* `CANCELADO`
+
+## Significado dos estados
+
+**TRIAL**
+
+Empresa cadastrada em período ou condição de avaliação. O estado não representa, por si só, um sistema de cobrança ou expiração automática.
+
+**ATIVO**
+
+Empresa habilitada para utilizar as funcionalidades permitidas pelas regras atuais de autenticação e autorização.
+
+**SUSPENSO**
+
+Empresa cujo acesso deve ser bloqueado pelas regras implementadas.
+
+**CANCELADO**
+
+Empresa cujo acesso deve ser bloqueado pelas regras implementadas.
+
+## Regras importantes
+
+* O documento deve ser validado para evitar duplicidade.
+* O slug deve ser validado para evitar conflitos.
+* As regras de criação devem permanecer centralizadas no serviço correspondente.
+* O onboarding utiliza o serviço de criação de tenant.
+* A autenticação deve validar o estado do tenant.
+* A mudança de estado deve respeitar as regras de negócio.
+
+A expiração automática de um período de avaliação ainda não está implementada.
+
+---
+
+# 8. Domínio User
+
+`User` representa uma pessoa com acesso ao TAGOX Flow.
+
+O usuário está associado a um tenant e não deve ser tratado como um cadastro global independente da empresa.
+
+O domínio contempla os conceitos de:
+
+* Identificador.
+* Nome.
+* E-mail.
+* Senha armazenada por meio de hash.
+* Tenant associado.
+* Status.
+* Datas de criação e atualização.
+
+Os campos definitivos são os presentes na entidade e no schema atual.
+
+## Status do usuário
+
+O enum de status do usuário contempla:
+
+* `ATIVO`
+* `INATIVO`
+* `BLOQUEADO`
+
+## Regras obrigatórias
+
+1. O e-mail deve ser validado.
+2. O usuário deve estar associado a um tenant.
+3. A senha nunca deve ser armazenada em texto puro.
+4. O hash da senha não deve ser retornado nas respostas da API.
+5. Usuários inativos não devem conseguir autenticar.
+6. Usuários bloqueados não devem conseguir autenticar.
+7. A autenticação deve validar o estado do usuário antes de conceder acesso.
+8. O sistema deve impedir a duplicidade de e-mail dentro do mesmo tenant.
+
+A restrição de unicidade atual é composta por:
+
+```text
 (tenant_id, email)
+```
 
-Isso significa:
+Isso permite que empresas diferentes tenham usuários com o mesmo e-mail, caso essa seja a regra permitida pelo modelo, sem gerar duplicidade dentro da mesma empresa.
 
-Tenant A
-mesmo@email.com
+---
 
-Tenant B
-mesmo@email.com
+# 9. RBAC — Role-Based Access Control
 
-podem coexistir.
+O TAGOX Flow utiliza RBAC para organizar o acesso às funcionalidades por meio de papéis.
 
-Dentro do mesmo Tenant, o email não pode ser duplicado.
+O objetivo é separar a identidade do usuário das permissões relacionadas às suas responsabilidades.
 
-5. Stack Tecnológica
+O modelo básico contempla:
 
-O TAGOX Flow está sendo desenvolvido utilizando uma stack baseada em Java e Spring Boot.
+* Usuário.
+* Papel.
+* Associação entre usuário e papel.
+* Tenant ao qual o usuário pertence.
 
-Backend
+## Papéis padrão
 
-Tecnologias principais:
+* `ADMIN`
+* `PROFISSIONAL`
+* `ASSISTENTE`
 
-Java 21;
-Spring Boot 4.1.1;
-Spring Web MVC;
-Spring Data JPA;
-Hibernate;
-Spring Security;
-Bean Validation;
-JWT;
-BCrypt;
-Maven.
-Banco de Dados
-PostgreSQL 18.6.
-Migração de Banco
-Flyway.
+## ADMIN
 
-Todas as alterações estruturais do banco devem ser realizadas através de migrations versionadas.
+Representa o administrador da empresa no contexto do sistema.
 
-Testes
+O administrador poderá executar operações administrativas permitidas pela configuração de segurança e pelas regras de negócio.
 
-O projeto utiliza:
+Na implementação atual, a criação de usuários pela API protegida exige o papel `ADMIN`.
 
-Spring Boot Test;
-JUnit;
-testes de persistência;
-testes de serviços;
-testes de controllers;
-testes de isolamento multi-tenant;
-testes de autenticação;
-testes de JWT;
-testes de autorização/RBAC.
-6. Estrutura do Backend
+## PROFISSIONAL
 
-O backend segue uma organização baseada em domínio, separando responsabilidades entre entidades, serviços, controladores, DTOs, segurança e tratamento de exceções.
+Representa o usuário profissional.
 
-Estrutura principal:
+Esse papel não concede automaticamente privilégios administrativos.
 
-controller
-domain
-dto
-service
-security
-config
-exception
-Controller
+## ASSISTENTE
 
-Responsável pelos endpoints HTTP.
+Representa o usuário assistente.
 
-Domain
+Esse papel também não concede automaticamente privilégios administrativos.
 
-Contém entidades, enums e repositórios relacionados ao domínio.
+## Regra de segurança
 
-DTO
+A existência de um papel não deve ser interpretada como autorização irrestrita para acessar dados de outros tenants.
 
-Contém objetos utilizados na comunicação entre API e aplicação.
+A autorização deve considerar a operação solicitada, o papel do usuário autenticado e o contexto da empresa.
 
-Service
+O RBAC básico está implementado. A matriz completa de permissões para os futuros módulos ainda precisa ser definida.
 
-Contém regras de negócio e operações de aplicação.
+---
 
-Security
+# 10. Domínio Role
 
-Contém os componentes relacionados à autenticação e contexto de segurança.
+A entidade `Role` representa os papéis disponíveis na plataforma.
 
-Config
+O enum `RoleType` contempla os papéis padrão:
 
-Contém configurações da aplicação, incluindo Spring Security.
-
-Exception
-
-Centraliza exceções de negócio e tratamento global de erros.
-
-7. Domínio Tenant
-
-Tenant representa a organização cliente dentro da plataforma.
-
-Responsabilidades:
-
-identificar a organização;
-manter informações próprias da empresa;
-servir como base de isolamento dos dados;
-controlar o ciclo de vida da organização.
-
-A implementação atual possui:
-
-Tenant;
-TenantRepository;
-TenantService;
-TenantController;
-TenantStatus;
-TipoPessoa;
-DTOs de Tenant.
-8. Domínio User
-
-User representa um usuário pertencente a uma organização dentro do TAGOX Flow.
-
-Cada usuário possui:
-
-identificação própria;
-Tenant associado;
-nome;
-email;
-senha armazenada através de hash;
-status;
-informações relacionadas à persistência.
-
-A associação obrigatória com Tenant garante que usuários estejam sempre vinculados a uma organização.
-
-A implementação atual possui:
-
-User;
-UserRepository;
-UserStatus;
-UserService;
-UserController;
-CreateUserRequest;
-UserResponse.
-9. RBAC — Controle de Acesso
-
-O TAGOX Flow utiliza RBAC — Role-Based Access Control — como modelo inicial de autorização.
-
-O objetivo é permitir que usuários possuam diferentes níveis de acesso conforme sua função dentro da organização.
-
-O modelo implementado é:
-
-User
- ↓
-UserRole
- ↓
-Role
-
-Os papéis atualmente definidos são:
-
-ADMIN;
-PROFISSIONAL;
-ASSISTENTE.
-
-O RBAC já está integrado ao Spring Security.
-
-10. Domínio Role
-
-Role representa um papel de acesso dentro do TAGOX Flow.
-
-A implementação possui:
-
-Role;
-RoleRepository;
-RoleType.
-
-Os tipos atualmente definidos são:
-
+```text
 ADMIN
 PROFISSIONAL
 ASSISTENTE
+```
 
-A entidade Role possui:
+A migration V6 é responsável pela inserção inicial dos papéis padrão no banco.
 
-identificador UUID;
-tipo;
-descrição.
+A aplicação deve utilizar os registros persistidos para associar papéis aos usuários.
 
-O tipo é persistido como enumeração textual.
+## Regras
 
-Próxima evolução
+* Os papéis padrão devem existir para que as operações correspondentes funcionem.
+* A criação de papéis padrão deve ser idempotente.
+* Não se deve inserir duplicatas ao reaplicar uma operação equivalente.
+* A associação deve utilizar o tipo de papel esperado.
+* A ausência de um papel necessário deve gerar um erro controlado, sem deixar o onboarding parcialmente persistido.
 
-As roles padrão deverão ser garantidas pelo Flyway.
+A criação inicial dos papéis padrão está implementada por meio da migration V6.
 
-Será criada uma nova migration, sem alterar V1–V5:
+---
 
-V6__seed_default_roles.sql
+# 11. UserRole — Associação entre Usuário e Papel
 
-Essa migration será responsável por garantir as roles padrão do sistema.
+`UserRole` representa a associação entre um usuário e um papel.
 
-11. Domínio UserRole
+Essa estrutura permite que a aplicação determine quais papéis estão atribuídos ao usuário autenticado.
 
-UserRole representa a associação entre um usuário e um papel de acesso.
+A associação é utilizada na construção das regras de autorização.
 
-A relação é:
+## Responsabilidades
 
-User → UserRole → Role
+* Associar um usuário a um papel.
+* Consultar os papéis atribuídos.
+* Impedir associações duplicadas conforme as restrições do schema.
+* Permitir que os serviços de negócio utilizem os papéis persistidos.
+* Garantir que o usuário e a associação pertençam ao contexto correto.
 
-A implementação utiliza chave composta através de:
+No onboarding, o primeiro usuário criado recebe a associação ao papel `ADMIN`.
 
-UserRole;
-UserRoleId;
-UserRoleRepository.
+A criação do tenant, do usuário e da associação de papel deve fazer parte da mesma transação de onboarding.
 
-O relacionamento permite que um usuário possua uma ou mais roles.
+Se alguma dessas operações falhar, a transação deve ser revertida.
 
-12. Relacionamentos do Modelo
+---
 
-O modelo atual possui os seguintes relacionamentos principais:
+# 12. Relacionamentos entre Entidades
 
+Os principais relacionamentos do modelo atual são:
+
+```text
 Tenant
- └── User
-      └── UserRole
-           └── Role
+  └── User
+       └── UserRole
+            └── Role
+```
 
-Conceitualmente:
+## Tenant e User
 
-Tenant possui vários Users;
-User pertence obrigatoriamente a um Tenant;
-User pode possuir múltiplas associações UserRole;
-Role pode estar associada a múltiplos usuários.
+Um tenant pode possuir vários usuários.
 
-Os futuros módulos de negócio deverão seguir o mesmo princípio de isolamento.
+Cada usuário pertence a um tenant.
 
-13. Banco de Dados e Flyway
+## User e Role
 
-O TAGOX Flow utiliza PostgreSQL como banco de dados principal.
+A associação entre usuário e papel é realizada por meio de `UserRole`.
 
-A evolução estrutural do banco é controlada pelo Flyway.
+O modelo permite atribuir papéis aos usuários sem incorporar toda a lógica de autorização diretamente à entidade `User`.
 
-O Hibernate está configurado para validar o schema existente:
+## Integridade
 
+Os relacionamentos devem respeitar:
+
+* Chaves estrangeiras.
+* Identificadores válidos.
+* Restrições de unicidade.
+* Integridade transacional.
+* Isolamento por tenant.
+* Regras de exclusão e atualização definidas pelo schema.
+
+Não devem ser realizadas alterações estruturais diretamente no banco sem uma migration correspondente.
+
+---
+
+# 13. Banco de Dados e Flyway
+
+O PostgreSQL é o banco de dados utilizado pelo TAGOX Flow.
+
+O Flyway controla a evolução do schema por meio de migrations versionadas.
+
+A configuração do projeto utiliza validação do schema por meio de:
+
+```properties
 spring.jpa.hibernate.ddl-auto=validate
+```
 
-Isso garante que:
+O Hibernate deve validar a compatibilidade entre as entidades mapeadas e o schema, em vez de modificar automaticamente a estrutura do banco.
 
-Hibernate não cria tabelas automaticamente;
-alterações estruturais devem ser feitas através de migrations;
-o modelo Java deve permanecer alinhado ao banco.
+## Regras de evolução do banco
 
-Regra:
+1. Alterações estruturais devem ser registradas em migrations.
+2. Migrations já aplicadas não devem ser editadas retroativamente.
+3. Novas mudanças devem receber novas versões.
+4. As migrations devem ser testadas em um banco apropriado.
+5. O schema deve permanecer compatível com as entidades JPA.
+6. Restrições importantes de integridade devem ser mantidas no banco.
+7. Dados necessários à inicialização devem ser tratados de maneira reproduzível.
+8. A aplicação deve ser validada em ambiente de testes antes da evolução para produção.
 
-Migrations aplicadas não devem ser alteradas.
+As migrations V1 a V6 constituem o histórico estrutural registrado até o estado documentado neste arquivo.
 
-Novas alterações devem ser implementadas através de novas versões.
+---
 
-14. Histórico das Migrations
+# 14. Histórico das Migrations
 
-Atualmente existem seis migrations principais.
+## V1 — Criação do Tenant
 
-V1 — create_tenant
+Arquivo histórico correspondente à criação inicial da estrutura de tenant.
 
-Criação inicial da estrutura de Tenant.
+Estabelece a base cadastral das empresas.
 
-V2 — alter_tenant_timestamps
+## V2 — Atualização dos timestamps do Tenant
 
-Ajustes relacionados aos timestamps do Tenant.
+Adiciona ou ajusta os campos de datas relacionados ao ciclo de vida do tenant.
 
-V3 — create_usuario
+## V3 — Criação do usuário
 
-Criação da tabela de usuários.
+Cria a estrutura inicial de persistência dos usuários.
 
-Inclui:
+## V4 — Criação dos papéis
 
-vínculo com Tenant;
-dados cadastrais;
-status;
-timestamps.
-V4 — create_role
+Cria a estrutura necessária à persistência dos papéis utilizados pelo RBAC.
 
-Criação da estrutura de papéis.
+## V5 — Criação da associação UserRole
 
-Inclui:
+Cria a estrutura para associar usuários e papéis.
 
-identificação;
-tipo;
-descrição.
-V5 — create_usuario_role
+## V6 — Seed dos papéis padrão
 
-Criação da associação entre usuários e papéis.
+Arquivo:
 
-Utiliza chave composta:
+```text
+V6__seed_standard_roles.sql
+```
 
-(usuario_id, role_id)
+Responsável por inserir os papéis padrão:
 
-V6 — seed_standard_roles
+```text
+ADMIN
+PROFISSIONAL
+ASSISTENTE
+```
 
-Garante as roles padrão do sistema:
+A migration utiliza `gen_random_uuid()` para os identificadores e `ON CONFLICT (tipo) DO NOTHING` para evitar duplicação de registros cujo tipo já exista.
 
-ADMIN;
-PROFISSIONAL;
-ASSISTENTE.
+O comportamento é idempotente em relação à restrição de unicidade utilizada.
 
-A migration foi aplicada com sucesso e utiliza inserção idempotente através de:
+A função `gen_random_uuid()` foi verificada no ambiente utilizado durante o desenvolvimento.
 
-ON CONFLICT (tipo) DO NOTHING.
+## Regra de imutabilidade
 
-15. Integridade e Segurança
+**V1, V2, V3, V4, V5 e V6 não devem ser alteradas depois de aplicadas.**
 
-As regras de integridade são protegidas em diferentes camadas.
+Qualquer evolução estrutural futura deve ser implementada em uma nova migration, como V7 ou superior, de acordo com a necessidade real identificada.
 
-Banco de Dados
-UUID;
-chaves primárias;
-chaves estrangeiras;
-constraints;
-campos obrigatórios;
-unicidade.
-Aplicação
-validação de entrada;
-regras de negócio;
-Services;
-tratamento global de exceções.
-Segurança
-autenticação;
-JWT;
-BCrypt;
-Spring Security;
-autorização por role;
-isolamento por Tenant.
-16. DTOs
+O número da próxima migration deve ser confirmado no repositório antes de sua criação.
 
-O TAGOX Flow utiliza DTOs para controlar a comunicação entre API e aplicação.
+---
 
-Objetivos:
+# 15. Integridade e Segurança dos Dados
 
-separar entrada e saída das entidades;
-evitar exposição direta das entidades JPA;
-controlar dados recebidos;
-facilitar validações;
-manter contratos da API mais estáveis.
-16.1 DTOs de Tenant
+A segurança do TAGOX Flow depende da combinação entre validação de entradas, regras de negócio, autenticação, autorização e integridade do banco.
 
-Incluem:
+## Senhas
 
-TenantRequestDTO;
-TenantResponseDTO.
-16.2 DTOs de User
+As senhas devem ser processadas por meio do mecanismo de hash configurado, utilizando BCrypt.
 
-Incluem:
+O sistema não deve:
 
-CreateUserRequest;
-UserResponse.
+* Persistir senhas em texto puro.
+* Retornar senhas nas respostas da API.
+* Retornar hashes de senha nos DTOs públicos.
+* Registrar senhas em logs.
+* Expor credenciais em mensagens de erro.
 
-Uma decisão importante já implementada:
+## Dados cadastrais
 
-CreateUserRequest não recebe mais tenantId para determinar o Tenant do usuário em uma operação autenticada.
+Os documentos devem ser normalizados conforme as regras existentes no domínio.
 
-O Tenant é determinado pelo contexto autenticado.
+O e-mail deve ser validado antes da persistência.
 
-17. Services
+O slug do tenant deve respeitar as regras de unicidade.
 
-A camada de Services concentra as regras de negócio.
+## Transações
 
-Responsabilidades:
+Operações que envolvam múltiplas entidades e dependências devem preservar a integridade transacional.
 
-operações de domínio;
-validações;
-fluxos de aplicação;
-controle transacional quando necessário;
-comunicação com repositories.
+O onboarding é um exemplo importante: tenant, primeiro usuário e associação ao papel administrativo devem ser persistidos de maneira atômica.
 
-Principais Services atuais:
+## Segurança multi-tenant
 
-TenantService;
-UserService;
-UserRoleService;
-AuthService.
-17.1 TenantService
+Toda nova funcionalidade que manipule dados de negócio deve considerar o tenant autenticado.
 
-Responsável por operações relacionadas ao Tenant.
+A validação de papel, isoladamente, não substitui a verificação de propriedade dos dados.
 
-Inclui:
+## Segurança em produção
 
-criação;
-validação;
-regras de negócio;
-consulta;
-persistência através do repository.
-17.2 UserService
+Ainda será necessário realizar uma revisão de produção abrangendo:
 
-Responsável pelas operações relacionadas aos usuários.
+* Gerenciamento de segredos.
+* Configuração dos ambientes.
+* HTTPS.
+* Política de expiração e renovação de tokens.
+* Monitoramento e auditoria.
+* Proteção contra abuso de endpoints públicos.
+* Logs sem informações sensíveis.
+* Backup e recuperação.
+* Configuração de CORS, quando aplicável.
+* Política de retenção de dados.
+* Procedimentos de resposta a incidentes.
 
-Inclui:
+Esses pontos não devem ser considerados concluídos apenas porque a autenticação básica já funciona.
 
-criação;
-validação;
-associação ao Tenant;
-proteção contra duplicidade;
-persistência da senha através de hash.
+---
 
-No fluxo autenticado, o Tenant utilizado pelo UserService vem do contexto autenticado.
+# 16. DTOs e Contratos da API
 
-17.3 UserRoleService
+Os DTOs definem o contrato de comunicação entre clientes e backend.
 
-Responsável pela associação entre usuários e roles.
+Eles devem impedir que entidades internas sejam expostas diretamente de maneira descontrolada.
 
-Inclui:
+Os DTOs também permitem validar os dados recebidos antes da execução das regras de negócio.
 
-busca do usuário;
-busca da role;
-verificação de duplicidade;
-criação de UserRole.
-17.4 AuthService
+## Regras
 
-Responsável pelo fluxo de autenticação.
+* Utilizar DTOs de entrada para operações que recebem dados externos.
+* Validar campos obrigatórios.
+* Validar formatos e limites aplicáveis.
+* Não aceitar identificadores privilegiados sem a validação correspondente.
+* Não expor hashes de senha.
+* Não expor dados internos desnecessários.
+* Manter respostas previsíveis.
+* Evitar acoplar contratos públicos à estrutura interna das entidades.
 
-O login utiliza:
+## Autenticação
 
+O login utiliza as informações necessárias para identificar o tenant e o usuário, além da senha.
+
+O contrato registrado para o login contempla:
+
+```text
 tenantSlug
 email
 senha
+```
 
-Fluxo:
+## Criação de usuário
 
-Login
- ↓
-Tenant
- ↓
-User
- ↓
-Validação de status
- ↓
-BCrypt
- ↓
-JWT
+A criação de usuários utiliza o DTO correspondente ao contrato de criação, atualmente baseado nos campos:
 
-O JWT contém:
+```text
+nome
+email
+senha
+```
 
-userId
-tenantId
-Evolução definida
+A implementação concreta deve permanecer alinhada aos DTOs presentes no repositório.
 
-O TRIAL deverá ser aceito como estado autenticável.
+## Onboarding
 
-A regra futura será:
+O onboarding utiliza DTOs específicos para receber os dados necessários à criação do tenant e de seu primeiro administrador.
 
-TRIAL      → login permitido
-ATIVO      → login permitido
-SUSPENSO   → login bloqueado
-CANCELADO  → login bloqueado
+A resposta deve informar o resultado do cadastro sem retornar um JWT ou autenticar automaticamente o usuário.
 
-A política de duração e expiração do Trial ainda não será implementada nesta etapa.
+---
 
-18. Controllers
+# 17. Services e Regras de Negócio
 
-Os Controllers representam a camada HTTP.
+Os serviços concentram as regras de negócio e coordenam operações entre entidades e repositórios.
 
-Responsabilidades:
+Os componentes de serviço devem ser utilizados pelos controllers para evitar que a lógica de domínio fique concentrada nas camadas HTTP.
 
-receber requisições;
-validar DTOs;
-encaminhar para Services;
-retornar respostas HTTP.
+## TenantService
 
-Regras complexas de negócio devem permanecer nos Services.
+Responsável pelas operações de negócio relacionadas ao tenant, incluindo a criação conforme as regras existentes.
 
-Fluxo:
+As validações de duplicidade de documento e slug devem permanecer centralizadas na lógica correspondente.
 
-Cliente HTTP
-    ↓
-Controller
-    ↓
-Service
-    ↓
-Repository
-    ↓
-Banco
-18.1 TenantController
+## UserService
 
-Responsável pelos endpoints relacionados aos Tenants.
+Responsável pelas operações de negócio relacionadas aos usuários.
 
-18.2 UserController
+A criação de usuários deve respeitar a associação ao tenant, a validação dos dados e o armazenamento seguro da senha.
 
-Responsável pelos endpoints relacionados aos usuários.
+## UserRoleService
 
-A criação de usuário está protegida por autorização:
+Responsável pelas associações entre usuários e papéis.
 
-@PreAuthorize("hasRole('ADMIN')")
+O onboarding utiliza esse serviço para atribuir o papel `ADMIN` ao primeiro usuário.
 
-Portanto, atualmente:
+## AuthService
 
-ADMIN        → pode criar usuário
-PROFISSIONAL → não pode criar usuário
-ASSISTENTE    → não pode criar usuário
-19. Autenticação e Segurança
+Responsável pelo fluxo de login e pela validação do tenant e do usuário.
 
-A camada de autenticação já está implementada.
+O serviço verifica se os estados permitem a autenticação antes de emitir o token.
 
-O TAGOX Flow utiliza:
+## OnboardingService
 
-Spring Security;
-JWT;
-BCrypt;
-autenticação stateless;
-JwtAuthenticationFilter;
-AuthenticatedUser.
-19.1 Fluxo de Autenticação
+Responsável por coordenar a criação inicial de uma empresa e de seu administrador.
+
+O fluxo utiliza a criação do tenant, a criação do usuário e a associação ao papel administrativo.
+
+A operação deve ser transacional.
+
+## Regra de arquitetura
+
+Os controllers não devem duplicar as regras de negócio implementadas nos serviços.
+
+Novos fluxos devem reutilizar os serviços existentes sempre que isso for compatível com suas responsabilidades.
+
+---
+
+# 18. Controllers e Endpoints da API
+
+Os controllers recebem requisições HTTP e delegam a execução aos serviços.
+
+Os endpoints implementados devem respeitar os contratos dos DTOs, a validação das entradas e as regras de segurança.
+
+## Endpoints registrados
+
+### Login
+
+```http
 POST /api/auth/login
-        ↓
-AuthService
-        ↓
-validação Tenant
-        ↓
-validação User
-        ↓
-BCrypt
-        ↓
-JwtService
-        ↓
-JWT
-19.2 JWT
+```
 
-O JWT contém:
+Endpoint público utilizado para autenticar um usuário de um tenant.
 
-userId
-tenantId
+O fluxo valida o tenant, o usuário e os estados correspondentes antes de emitir o JWT.
 
-O JwtAuthenticationFilter extrai essas informações.
+### Onboarding
 
-Em seguida, busca as roles do usuário.
-
-Fluxo:
-
-JWT
- ↓
-userId + tenantId
- ↓
-UserRoleRepository
- ↓
-RoleType
- ↓
-GrantedAuthority
- ↓
-Spring Security
-
-As authorities são geradas como:
-
-ROLE_ADMIN
-ROLE_PROFISSIONAL
-ROLE_ASSISTENTE
-20. Autorização RBAC
-
-A autorização é aplicada através do Spring Security.
-
-Foi habilitado:
-
-@EnableMethodSecurity
-
-Exemplo atual:
-
-@PreAuthorize("hasRole('ADMIN')")
-
-O fluxo completo é:
-
-Request
- ↓
-JWT
- ↓
-JwtAuthenticationFilter
- ↓
-roles
- ↓
-GrantedAuthority
- ↓
-Spring Security
- ↓
-@PreAuthorize
- ↓
-Endpoint permitido ou 403
-21. Validação Real do RBAC
-
-O RBAC foi validado com o servidor real em execução.
-
-ADMIN
-
-Login:
-
-HTTP 200
-
-Criação de usuário:
-
-HTTP 201
-PROFISSIONAL
-
-Login:
-
-HTTP 200
-
-Criação de usuário:
-
-HTTP 403
-ASSISTENTE
-
-Login:
-
-HTTP 200
-
-Criação de usuário:
-
-HTTP 403
-
-Isso comprovou o funcionamento da cadeia completa:
-
-JWT → Roles → Authorities → Authorization
-22. Tratamento de Exceções
-
-O TAGOX Flow possui uma camada dedicada para tratamento de erros.
-
-Componentes:
-
-GlobalExceptionHandler;
-BusinessException;
-DuplicateResourceException;
-ResourceNotFoundException.
-
-Objetivos:
-
-padronizar respostas;
-centralizar tratamento;
-separar regras de negócio de HTTP;
-facilitar manutenção.
-23. Testes Automatizados
-
-O projeto possui testes automatizados para validar a estabilidade do Core.
-
-A última execução registrada apresentou:
-
-Tests run: 48
-Failures: 0
-Errors: 0
-Skipped: 0
-
-BUILD SUCCESS
-
-Data da execução:
-
-2026-09-26 23:45:44 -03:00
-23.1 Testes de Tenant
-
-Cobrem:
-
-criação;
-persistência;
-regras;
-endpoints;
-validações.
-23.2 Testes de User
-
-Cobrem:
-
-criação;
-validação;
-persistência;
-associação ao Tenant;
-duplicidade.
-23.3 Testes Multi-Tenant
-
-UserTenantIsolationTest valida isolamento entre organizações.
-
-Também existem testes HTTP demonstrando que Tenants diferentes podem possuir o mesmo email sem compartilhamento de dados.
-
-23.4 Testes de Authentication
-
-A autenticação possui testes para:
-
-login;
-JWT;
-serviço de autenticação;
-controller de autenticação.
-23.5 Testes de RBAC
-
-A autorização possui testes para:
-
-ADMIN autorizado;
-PROFISSIONAL bloqueado;
-ASSISTENTE bloqueado;
-carregamento das roles;
-HTTP 403.
-24. Etapa 10 — Autorização RBAC
-Status: CONCLUÍDA
-
-A Etapa 10 foi finalizada, auditada, testada e publicada.
-
-Commit:
-
-749f565 feat: implementa autorizacao RBAC
-
-Push:
-
-main → origin/main
-
-Working tree ficou limpa antes do push.
-
-Essa etapa estabeleceu a autorização real da plataforma.
-
-25. Etapa 10.1 — Fundação de Onboarding
-
-Status: IMPLEMENTAÇÃO CONCLUÍDA — EM REVISÃO FINAL
-
-
-Antes dos módulos de negócio, será concluída a fundação de onboarding.
-
-Objetivos:
-
-10.1.1 — Roles padrão
-
-Status: CONCLUÍDA
-
-A migration Flyway V6 foi criada para garantir as roles padrão:
-
-ADMIN
-PROFISSIONAL
-ASSISTENTE
-
-A V6 foi aplicada com sucesso sem alterar as migrations anteriores.
-
-10.1.2 — TRIAL funcional
-
-Permitir autenticação de Tenants em:
-
-TRIAL
-
-Mantendo:
-
-ATIVO      → login permitido
-SUSPENSO   → login bloqueado
-CANCELADO  → login bloqueado
-
-10.1.3 — Primeiro ADMIN
-
-O onboarding deverá garantir que um novo Tenant não fique sem administrador.
-
-Modelo:
-
-Criar Tenant
-↓
-TRIAL
-↓
-Criar primeiro User
-↓
-ATIVO
-↓
-ADMIN
-↓
-Criar UserRole
-↓
-Tenant pronto
-
-Essas operações deverão ocorrer dentro de uma única transação.
-
-A orquestração será responsabilidade de uma camada de aplicação própria de onboarding, utilizando os Services existentes sempre que possível.
-
-Em caso de falha em qualquer etapa:
-
-ROLLBACK
-
-O usuário ADMIN criado durante o onboarding não será autenticado automaticamente. O acesso ocorrerá posteriormente pelo fluxo normal de login.
-
-10.1.4 — Endpoint de onboarding
-
-O onboarding será exposto através de um endpoint público separado:
-
+```http
 POST /api/onboarding
+```
 
-O endpoint será responsável por orquestrar a criação inicial da organização:
+Endpoint público utilizado para cadastrar uma empresa e criar seu primeiro administrador.
 
-Tenant
-↓
-User
-↓
-ADMIN
-↓
-UserRole
+O resultado esperado para uma criação bem-sucedida é HTTP `201 Created`.
 
-O Tenant será criado inicialmente com status TRIAL.
+O onboarding não emite JWT e não realiza login automático.
 
-O primeiro usuário será criado como ATIVO e receberá a role ADMIN.
+### Criação de tenant
 
-Todas as operações deverão ocorrer dentro de uma única transação.
+```http
+POST /api/tenants
+```
 
-Em caso de falha em qualquer etapa:
+O endpoint existente está protegido por autenticação.
 
-ROLLBACK
+Sua utilização não deve ser confundida com o onboarding público, que representa o fluxo de entrada de uma nova empresa.
 
-O onboarding não irá gerar JWT nem autenticar automaticamente o usuário.
+### Criação de usuário
 
-Após a conclusão do onboarding, a autenticação continuará sendo realizada através do fluxo normal:
+```http
+POST /api/users
+```
 
+A criação de usuários pela API está protegida e exige o papel `ADMIN`, conforme a configuração atual.
+
+## Evolução dos endpoints
+
+Antes de adicionar novos endpoints, devem ser verificados:
+
+* O contrato esperado.
+* O serviço responsável.
+* As permissões necessárias.
+* A validação do tenant.
+* O tratamento de exceções.
+* Os testes de sucesso e falha.
+* Os códigos HTTP.
+* O impacto no isolamento de dados.
+
+A lista acima documenta os endpoints relevantes registrados nesta etapa. Ela não representa necessariamente o inventário completo de todas as rotas existentes no código.
+
+---
+
+# 19. Autenticação e JWT
+
+A autenticação do TAGOX Flow utiliza Spring Security e JWT.
+
+O login é realizado pelo endpoint:
+
+```http
 POST /api/auth/login
+```
 
-A regra de negócio deverá existir em uma camada de aplicação reutilizável, permitindo futuramente diferentes formas de entrada, como onboarding self-service ou onboarding controlado pela TAGOX, sem duplicação das regras de domínio.
+O contrato de autenticação utiliza o slug do tenant, o e-mail e a senha do usuário.
 
-26. Decisão sobre Trial
+## Fluxo de autenticação
 
-Foi decidido que:
+1. O cliente envia os dados de login.
+2. O backend identifica o tenant pelo slug informado.
+3. O backend valida o estado do tenant.
+4. O backend localiza o usuário no contexto do tenant.
+5. O backend valida a senha.
+6. O backend valida o estado do usuário.
+7. Se todas as verificações forem aprovadas, o serviço gera o JWT.
+8. O token contém os identificadores de usuário e tenant utilizados pela aplicação.
 
-TRIAL é um estado funcional do Tenant e permite login.
+O token é gerado pelo componente `JwtService`, por meio do fluxo de autenticação existente.
 
-Não serão implementados agora:
+## Validação do tenant
 
-duração fixa de 14 dias;
-trial_ends_at;
-job de expiração;
-limite de usuários;
-limite de recursos;
-cobrança;
-assinatura;
-suspensão automática.
+A autenticação permite tenants nos estados:
 
-Essas regras serão definidas quando o modelo comercial do SaaS estiver formalizado.
+* `TRIAL`
+* `ATIVO`
 
-27. Decisões Arquiteturais
+A autenticação deve ser recusada para tenants nos estados:
 
-27.1 Multi-Tenant
+* `SUSPENSO`
+* `CANCELADO`
 
-Modelo:
+## Validação do usuário
 
-Shared Database
-+
-Shared Schema
-+
-tenant_id
-27.2 UUID
+A autenticação deve ser recusada quando o usuário estiver:
 
-Entidades principais utilizam UUID.
+* `INATIVO`
+* `BLOQUEADO`
 
-Motivos:
+O usuário também precisa fornecer credenciais válidas.
 
-menor exposição de IDs sequenciais;
-integração;
-geração distribuída;
-melhor adequação a APIs públicas.
-27.3 Flyway
+## Decisão arquitetural
 
-Flyway é a fonte oficial de evolução estrutural do banco.
+**O onboarding e o login são operações separadas.**
 
-Migrations aplicadas não devem ser modificadas.
+O onboarding cria a estrutura inicial da empresa e do administrador, mas não gera JWT e não autentica automaticamente o usuário.
 
-27.4 DTOs
+Após concluir o cadastro, o usuário deve realizar o login pelo endpoint específico.
 
-Entidades JPA não devem ser utilizadas diretamente como contratos da API quando houver necessidade de DTO específico.
+## Limites da implementação atual
 
-27.5 RBAC
+A validação dos estados durante o login está implementada no estado local registrado.
 
-Modelo inicial:
+Ainda devem ser avaliadas, conforme a evolução do sistema, as regras relacionadas a:
 
-User
-↓
-UserRole
-↓
-Role
-27.6 Segurança Multi-Tenant
+* Expiração do JWT.
+* Renovação de tokens.
+* Revogação de sessões.
+* Alterações de estado ocorridas depois da emissão do token.
+* Invalidade imediata de tokens em situações de bloqueio.
+* Política de expiração de credenciais.
 
-O tenantId não deve ser escolhido pelo cliente em operações autenticadas.
+Não se deve presumir que uma alteração de estado no banco invalida automaticamente todos os JWTs já emitidos. Esse comportamento depende dos mecanismos de validação implementados em cada requisição.
 
-O Tenant deve ser determinado pelo contexto confiável da autenticação.
+---
 
-27.7 Onboarding
+# 20. Spring Security e Autorização
 
-O primeiro usuário de um novo Tenant deverá ser ADMIN.
+O backend utiliza Spring Security para proteger os endpoints.
 
-Tenant + primeiro ADMIN devem ser criados atomicamente.
+A configuração existente contempla:
 
-O onboarding técnico não representa contratação comercial.
+* Autenticação baseada em JWT.
+* Aplicação stateless.
+* Filtro de JWT.
+* BCrypt.
+* Segurança por método.
+* Desativação de mecanismos de autenticação por formulário e HTTP Basic na configuração registrada.
+* Proteção dos endpoints de acordo com as regras configuradas.
 
-O fluxo de contratação será tratado separadamente e poderá envolver:
+A configuração também deve tratar corretamente os endpoints públicos de login e onboarding.
 
-seleção de módulos;
-proposta comercial;
-contrato;
-assinatura;
-pagamento;
-confirmação da contratação pela TAGOX Tech;
-configuração do Tenant;
-ativação dos módulos contratados;
-definição das permissões;
-criação ou ativação dos usuários;
-envio das credenciais ou instruções de acesso.
+## Endpoints públicos
 
-A existência da role ADMIN não significa que o Tenant possui acesso automático a todos os módulos do sistema.
+Os fluxos abaixo devem poder ser acessados sem JWT:
 
-Roles representam o que um usuário pode fazer.
+```text
+POST /api/auth/login
+POST /api/onboarding
+```
 
-Módulos contratados representam o que o Tenant possui contratado.
+## Endpoints protegidos
 
-Essas duas dimensões deverão permanecer separadas na arquitetura.
+Os demais endpoints devem respeitar a política de segurança configurada, salvo exceções públicas explicitamente definidas.
 
-28. Funcionalidades Ainda Não Implementadas
+O endpoint de criação de tenant está protegido por autenticação.
 
-Após a conclusão do Core atual, ainda fazem parte do roadmap:
+A criação de usuários exige autorização administrativa conforme a configuração existente.
 
-Onboarding
-onboarding completo;
-primeiro ADMIN;
-fluxo público/controlado;
-regras de Trial.
-Permissões avançadas
-permissões por recurso;
-permissões por módulo;
-controle granular.
-Módulos de negócio
-clientes/pacientes;
-agenda;
-atendimentos;
-prontuário;
-documentos;
-financeiro;
-relatórios;
-configurações.
+## Princípios
 
-Os módulos exatos serão definidos antes da implementação da primeira vertical.
+1. Autenticação e autorização são etapas distintas.
+2. A existência de um JWT válido não concede acesso irrestrito.
+3. A autorização deve ser verificada no backend.
+4. Os papéis devem ser obtidos de acordo com a implementação de segurança existente.
+5. O tenant autenticado deve ser respeitado nas operações de negócio.
+6. Novos endpoints devem possuir uma política de acesso explícita.
 
-29. Primeira Vertical — Psicologia e Saúde
+A configuração deve continuar sendo revisada à medida que novos módulos forem adicionados.
 
-A primeira vertical planejada para evolução comercial do TAGOX Flow é psicologia e saúde.
+---
 
-A vertical utilizará o Core já desenvolvido:
+# 21. Validação do RBAC e Isolamento entre Tenants
 
-Tenant
-User
-Role
-RBAC
-Authentication
-Authorization
-Multi-Tenant
+O RBAC foi validado por meio de testes de autorização HTTP.
 
-Os módulos específicos serão construídos sobre essa fundação.
+O cenário registrado verifica a diferença de acesso entre o administrador e os demais papéis.
 
-A arquitetura deverá permanecer reutilizável para futuras verticais.
+## Cenários registrados
 
-30. Roadmap Oficial
-Fase 1 — Fundação SaaS
-Etapa 1 — Tenant
+| Papel        | Login    | Criação de usuário |
+| ------------ | -------- | ------------------ |
+| ADMIN        | HTTP 200 | HTTP 201           |
+| PROFISSIONAL | HTTP 200 | HTTP 403           |
+| ASSISTENTE   | HTTP 200 | HTTP 403           |
 
-✅ Concluída
+Os resultados acima correspondem aos cenários de validação registrados para os endpoints e as configurações atuais.
 
-Etapa 2 — User Base
+O login bem-sucedido de um profissional ou assistente não significa que esses usuários possuam autorização para operações administrativas.
 
-✅ Concluída
+## Isolamento de tenant
 
-Etapa 3 — Exceptions
+O sistema também possui testes registrados para validar o isolamento entre tenants.
 
-✅ Concluída
+O objetivo é impedir que a identidade de uma empresa seja utilizada para acessar dados pertencentes a outra.
 
-Etapa 4 — PostgreSQL + Flyway
+## Continuidade da validação
 
-✅ Concluída
+A cada novo endpoint protegido, devem ser avaliados:
 
-Etapa 5 — JWT
+* Acesso com usuário ADMIN.
+* Acesso com PROFISSIONAL.
+* Acesso com ASSISTENTE.
+* Acesso sem autenticação.
+* Acesso com token inválido.
+* Acesso com contexto de tenant diferente.
+* Acesso a recursos pertencentes a outra empresa.
 
-✅ Concluída
+Os testes atuais validam a fundação de segurança já implementada. Eles não dispensam a criação de testes específicos para cada novo módulo.
 
-Etapa 6 — Authentication
+---
 
-✅ Concluída
+# 22. Tratamento de Exceções e Erros
 
-Etapa 7 — RBAC Base
+O backend deve retornar erros controlados, evitando expor detalhes internos da aplicação.
 
-✅ Concluída
+O tratamento de exceções deve diferenciar erros de validação, conflitos de negócio, falhas de autenticação e problemas internos.
 
-Etapa 8 — Tenant via JWT
+## Categorias de erro
 
-✅ Concluída
+**Validação**
 
-Etapa 9 — Isolamento HTTP
+Dados de entrada inválidos ou incompletos.
 
-✅ Concluída
+**Conflito de negócio**
 
-Etapa 10 — Autorização RBAC
+Tentativa de cadastrar informações incompatíveis com as regras, como dados únicos já existentes.
 
-✅ Concluída
+**Autenticação**
 
-Etapa 10.1 — Fundação de Onboarding
+Credenciais inválidas ou usuário/tenant sem condições de autenticar.
 
-🔜 Próxima
+**Autorização**
 
-31. Fase 2 — Módulos de Negócio
-Etapa 11 — Módulo de negócio inicial
+Usuário autenticado sem permissão para executar determinada operação.
 
-🔜
+**Erro interno**
 
-Processo obrigatório:
+Falha inesperada que não deve expor detalhes sensíveis ao cliente.
 
-AUDITAR
- ↓
-DEFINIR
- ↓
-MODELAR
- ↓
-MIGRATION
- ↓
-IMPLEMENTAR
- ↓
-TESTAR
- ↓
-VALIDAR ISOLAMENTO
- ↓
-REGISTRAR
-
-Nenhum módulo será criado sem definição clara de suas regras de negócio.
+## Regras
 
-32. Etapa 12 — API Completa
+* Não retornar stack traces ao cliente.
+* Não expor credenciais ou hashes.
+* Não revelar dados privados de outros tenants.
+* Retornar códigos HTTP compatíveis com o resultado da operação.
+* Registrar informações técnicas úteis para diagnóstico sem registrar segredos.
+* Garantir que falhas transacionais não deixem cadastros incompletos.
 
-Após os módulos principais:
+No onboarding, falhas durante a criação do tenant, do usuário ou da associação de papel devem provocar rollback da transação.
 
-endpoints;
-DTOs;
-validações;
-paginação;
-filtros;
-autorização;
-tratamento de erros;
-isolamento;
-documentação.
-33. Etapa 13 — Frontend
+---
 
-Frontend:
+# 23. Testes Automatizados e Validação Técnica
 
-React
-+
-TypeScript
+O projeto possui testes automatizados para a fundação de domínio, autenticação, autorização e onboarding.
 
-O frontend será desenvolvido depois que o Core da API estiver suficientemente estável.
-
-Principais fluxos:
-
-Login
- ↓
-Dashboard
- ↓
-Tenant
- ↓
-Usuários
- ↓
-Roles
- ↓
-Módulos
-34. Etapa 14 — Integração Frontend + Backend
-
-Serão integrados:
-
-autenticação;
-JWT;
-chamadas API;
-tratamento de 401;
-tratamento de 403;
-Tenant;
-usuários;
-roles;
-módulos.
-35. Etapa 15 — E2E
-
-Serão testados fluxos completos:
-
-Onboarding
- ↓
-Login
- ↓
-Dashboard
- ↓
-CRUD
- ↓
-Autorização
- ↓
-Isolamento
- ↓
-Logout
-
-Também serão executados cenários negativos.
-
-Exemplo:
-
-Tenant A
-   X
-Tenant B
-36. Etapa 16 — Segurança e Preparação para Produção
-
-Antes do lançamento serão revisados:
-
-JWT secret;
-variáveis de ambiente;
-credenciais;
-CORS;
-CSRF conforme arquitetura final;
-headers de segurança;
-rate limiting;
-logs;
-tratamento de exceções;
-exposição de informações;
-permissões;
-PostgreSQL;
-migrations;
-backups;
-recuperação de desastre;
-HTTPS;
-observabilidade;
-auditoria;
-configurações específicas de produção.
-
-Durante o desenvolvimento já foi identificado o aviso de senha de segurança gerada pelo Spring Boot.
-
-Esse comportamento será eliminado ou devidamente configurado antes da produção.
-
-37. Etapa 17 — Homologação e Deploy
-
-O lançamento não será feito diretamente do ambiente de desenvolvimento.
-
-O fluxo planejado será:
-
-Desenvolvimento
-      ↓
-Testes automatizados
-      ↓
-Integração
-      ↓
-E2E
-      ↓
-Revisão de segurança
-      ↓
-Homologação
-      ↓
-Validação final
-      ↓
-Produção
-38. Critério de Prontidão para Produção
-
-O TAGOX Flow não será considerado pronto apenas porque a aplicação inicia ou porque os testes unitários passam.
-
-Antes do lançamento, deverá existir:
-
-Core
-+
-Multi-Tenant
-+
-Authentication
-+
-Authorization
-+
-Onboarding
-+
-Business Modules
-+
-API
-+
-Frontend
-+
-Integration
-+
-E2E
-+
-Security
-+
-Observability
-+
-Backup
-+
-Production Configuration
-+
-Deployment
-
-Todos os componentes críticos deverão estar validados.
-
-39. Critério de Qualidade por Etapa
-
-O desenvolvimento seguirá o ciclo:
-
-AUDITAR
- ↓
-DECIDIR
- ↓
-IMPLEMENTAR
- ↓
-TESTAR
- ↓
-VALIDAR
- ↓
-REGISTRAR
- ↓
-AVANÇAR
-
-Não avançaremos simplesmente porque uma funcionalidade "parece funcionar".
-
-Cada etapa deverá possuir:
-
-implementação;
-testes;
-validação;
-decisão documentada;
-commit;
-push quando apropriado.
-40. Estado Atual Exato do Projeto
-
-Neste momento:
-
-┌────────────────────────────────────────────┐
-│             TAGOX FLOW BACKEND             │
-├────────────────────────────────────────────┤
-│ Tenant                         ✅           │
-│ User Base                      ✅           │
-│ Exceptions                     ✅           │
-│ PostgreSQL                     ✅           │
-│ Flyway V1–V6                   ✅           │
-│ JWT                            ✅           │
-│ Authentication                 ✅           │
-│ RBAC Base                      ✅           │
-│ Tenant via JWT                 ✅           │
-│ HTTP Isolation                 ✅           │
-│ Authorization RBAC             ✅           │
-│ Testes automatizados           ✅           │
-│ Validação HTTP real            ✅           │
-│ Onboarding Foundation          🔜           │
-│ Business Modules               🔜           │
-│ Complete API                   🔜           │
-│ React + TypeScript             🔜           │
-│ Frontend/Backend Integration   🔜           │
-│ E2E                            🔜           │
-│ Production Security            🔜           │
-│ Homologation                   🔜           │
-│ Deploy                         🔜           │
-└────────────────────────────────────────────┘
-41. Último Estado Validado
-
-Última execução da suíte:
-
-Tests run: 49
-Failures: 0
-Errors: 0
-Skipped: 0
+A última execução completa registrada apresentou:
 
+```text
+58 testes executados
+0 falhas
+0 erros
+0 testes ignorados
 BUILD SUCCESS
+```
 
-Último commit:
+**A suíte foi executada em 13/10/2026 e validou o backend. Essa execução não substitui a revisão documental nem a conferência do diff desta atualização.**
 
-0c0f031 feat: adiciona seed dos roles padrão
+## Categorias de testes registradas
 
-Branch:
+* Testes de serviços.
+* Testes de controllers.
+* Testes de autenticação.
+* Testes de isolamento entre tenants.
+* Testes de autorização RBAC.
+* Testes de onboarding.
+* Testes de validação de requisições.
+* Testes de persistência e comportamento transacional.
 
+## Cenários de onboarding
+
+Os cenários registrados incluem:
+
+* Criação bem-sucedida de tenant.
+* Tenant criado em `TRIAL`.
+* Criação do primeiro usuário administrador.
+* Associação do papel `ADMIN`.
+* Ausência de JWT na resposta.
+* Ausência de autenticação automática.
+* Ausência de exposição de senha e hash.
+* Rejeição de e-mail inválido.
+* Rejeição de requisição inválida sem persistência dos registros esperados.
+* Rollback quando o papel necessário não está disponível.
+
+## Validação da autenticação
+
+O fluxo de login possui validações para os estados do tenant e do usuário.
+
+A revisão atual deve garantir que os testes cubram os estados permitidos e bloqueados, além das credenciais inválidas.
+
+## Comandos de validação
+
+Para executar a suíte completa no backend, o comando Maven Wrapper utilizado no ambiente é:
+
+```bash
+./mvnw test
+```
+
+Para executar uma classe específica, pode-se utilizar:
+
+```bash
+./mvnw -Dtest=NomeDaClasseTest test
+```
+
+Os comandos devem ser executados no diretório do backend.
+
+Após mudanças no código, a suíte relevante deve ser executada novamente. Alterações exclusivamente documentais devem passar, no mínimo, por revisão do diff e validação de formatação; a execução dos testes pode ser repetida conforme o procedimento de qualidade do projeto.
+
+---
+
+# 24. Etapa 10 — RBAC
+
+A Etapa 10 estabeleceu a fundação de controle de acesso por papéis.
+
+O objetivo foi permitir que o sistema diferencie as responsabilidades de administradores, profissionais e assistentes.
+
+## Entregas registradas
+
+* Domínio de papéis.
+* Papéis padrão.
+* Associação entre usuário e papel.
+* Persistência por meio do banco de dados.
+* Integração com Spring Security.
+* Autorização por papel nos endpoints protegidos.
+* Validação dos acessos por HTTP.
+* Testes de autorização.
+* Fundamentos para aplicação de permissões aos módulos futuros.
+
+## Critério de conclusão
+
+A etapa de RBAC foi registrada como concluída.
+
+Isso significa que a fundação necessária para distinguir os papéis está implementada e validada nos cenários existentes.
+
+Não significa que todas as permissões futuras do produto já estejam definidas.
+
+A matriz de permissões por módulo deverá ser ampliada à medida que novas funcionalidades forem desenvolvidas.
+
+---
+
+# 25. Etapa 10.1 — Onboarding Inicial do Tenant
+
+A Etapa 10.1 implementa o fluxo técnico inicial de cadastro de uma nova empresa.
+
+A implementação está registrada como concluída no código local, com validações automatizadas e revisão final documental pendente.
+
+## Objetivo
+
+Permitir que uma nova empresa entre no sistema por um endpoint público, criando sua estrutura inicial e o primeiro usuário administrador.
+
+## Endpoint
+
+```http
+POST /api/onboarding
+```
+
+## Fluxo implementado
+
+O fluxo utiliza os serviços existentes para:
+
+1. Receber e validar os dados de onboarding.
+2. Criar o tenant.
+3. Definir o estado inicial do tenant como `TRIAL`.
+4. Criar o primeiro usuário.
+5. Definir o estado inicial do usuário como `ATIVO`.
+6. Associar o papel `ADMIN` ao primeiro usuário.
+7. Retornar uma resposta de onboarding sem JWT.
+8. Finalizar a transação somente quando as operações necessárias forem concluídas com sucesso.
+
+## Transação
+
+A operação deve manter a consistência entre o tenant, o usuário e a associação ao papel.
+
+Se uma etapa obrigatória falhar, a transação deve ser revertida.
+
+Não deve existir um tenant parcialmente criado como consequência de uma falha na criação do primeiro administrador.
+
+## Segurança
+
+O endpoint é público porque precisa permitir que uma empresa ainda não cadastrada inicie o processo.
+
+O fluxo não deve expor:
+
+* Senha em texto puro.
+* Hash de senha.
+* JWT.
+* Dados internos desnecessários.
+
+## Onboarding não é login
+
+O onboarding não gera JWT.
+
+O onboarding não autentica automaticamente o primeiro administrador.
+
+Após o cadastro, o usuário deve acessar:
+
+```http
+POST /api/auth/login
+```
+
+e fornecer as credenciais necessárias.
+
+## Separação comercial
+
+O onboarding técnico não realiza:
+
+* Contratação de plano.
+* Assinatura de contrato.
+* Processamento de pagamento.
+* Habilitação comercial de módulos.
+* Definição definitiva de permissões comerciais.
+* Ativação automática de todos os recursos.
+* Expiração automática do período de avaliação.
+
+Essas responsabilidades permanecem separadas do cadastro técnico.
+
+## Validação
+
+Em 13/10/2026, a suíte completa foi executada com 58 testes aprovados, sem falhas, erros ou testes ignorados, e o build foi concluído com BUILD SUCCESS.
+
+O estado local inclui a implementação do onboarding e a validação dos estados de tenant e usuário durante a autenticação.
+
+A revisão final do documento e sua publicação ainda estão pendentes.
+
+---
+
+# 26. Decisões Arquiteturais Oficiais
+
+As decisões abaixo orientam a evolução do TAGOX Flow.
+
+## 26.1. Onboarding separado do login
+
+O onboarding cria o tenant e seu primeiro administrador, mas não gera JWT.
+
+O login permanece como operação independente.
+
+## 26.2. Tenant inicial em TRIAL
+
+O onboarding técnico cria o tenant no estado `TRIAL`.
+
+Esse estado permite distinguir o cadastro inicial de uma empresa de uma ativação comercial definitiva.
+
+## 26.3. Primeiro usuário como ADMIN
+
+O primeiro usuário criado no onboarding recebe o papel `ADMIN`.
+
+Esse papel é necessário para a administração inicial da empresa, respeitando as permissões implementadas.
+
+## 26.4. Usuário inicial ativo
+
+O primeiro usuário é criado no estado `ATIVO`.
+
+Isso não significa que ele seja automaticamente autenticado. A autenticação continua dependendo do login.
+
+## 26.5. Transação atômica
+
+A criação do tenant, do usuário e da associação ao papel administrativo deve ocorrer dentro de uma única operação transacional.
+
+## 26.6. Autenticação valida os estados
+
+O login deve validar o estado do tenant e do usuário antes de emitir JWT.
+
+## 26.7. TRIAL e ATIVO podem autenticar
+
+A configuração atual permite autenticação de tenants em `TRIAL` e `ATIVO`.
+
+Tenants `SUSPENSO` e `CANCELADO` devem ser bloqueados pelo fluxo de login.
+
+Usuários `INATIVO` e `BLOQUEADO` também devem ser impedidos de autenticar.
+
+## 26.8. RBAC e módulos comerciais são independentes
+
+O papel de administrador não equivale à contratação de todos os módulos.
+
+O controle de permissões técnicas e o controle de direitos comerciais devem ser separados.
+
+## 26.9. Migrations aplicadas são imutáveis
+
+V1 a V6 não devem ser editadas retroativamente.
+
+Novas mudanças estruturais devem ser registradas em novas migrations.
+
+## 26.10. Contratos comerciais serão tratados posteriormente
+
+Assinaturas, pagamentos, planos, módulos contratados e ativação comercial definitiva não fazem parte do fluxo técnico atual de onboarding.
+
+## 26.11. Documentação acompanha o estado real
+
+A documentação deve distinguir claramente:
+
+* Implementado.
+* Testado.
+* Em revisão.
+* Pendente.
+* Planejado.
+
+Uma funcionalidade planejada não deve ser descrita como pronta para uso.
+
+---
+
+# 27. Funcionalidades Ainda Não Implementadas
+
+As funcionalidades abaixo fazem parte da evolução prevista, mas não devem ser consideradas concluídas sem implementação e validação correspondentes.
+
+## Gestão comercial
+
+* Contratos.
+* Assinaturas.
+* Pagamentos.
+* Planos comerciais.
+* Renovação de assinaturas.
+* Cancelamento de contratos.
+* Inadimplência.
+* Regras comerciais por tenant.
+
+## Ciclo de vida do trial
+
+* Data de expiração do período de avaliação.
+* Campo `trial_ends_at`, caso aprovado no modelo definitivo.
+* Processo automático de expiração.
+* Notificações de término do período.
+* Regras de transição do estado `TRIAL`.
+* Bloqueio automático após expiração, caso definido pela regra comercial.
+
+## Controle de módulos
+
+* Cadastro de módulos.
+* Associação de módulos contratados ao tenant.
+* Habilitação e desabilitação de módulos.
+* Verificação de acesso aos módulos contratados.
+* Limites de utilização.
+* Permissões detalhadas por funcionalidade.
+
+## Gestão operacional
+
+* Implementação completa dos módulos de negócio.
+* APIs de cada módulo.
+* Regras específicas por vertical.
+* Auditoria detalhada das operações.
+* Relatórios e indicadores.
+
+## Frontend
+
+* Aplicação React com TypeScript.
+* Tela de onboarding.
+* Tela de login.
+* Gerenciamento seguro do estado de autenticação.
+* Interface de administração.
+* Interfaces específicas por papel.
+* Integração com os endpoints do backend.
+
+## Produção
+
+* Configuração definitiva de ambientes.
+* Observabilidade.
+* Estratégia de backup e restauração.
+* Pipeline de integração e entrega.
+* Testes end-to-end.
+* Homologação.
+* Implantação em produção.
+
+Essas pendências devem ser tratadas progressivamente, sem comprometer as regras de segurança já estabelecidas.
+
+---
+
+# 28. Primeira Vertical — Psicologia e Saúde
+
+A primeira vertical planejada para o TAGOX Flow é a área de psicologia e saúde.
+
+A arquitetura deve permitir desenvolver funcionalidades específicas desse segmento sem transformar as regras particulares de uma vertical em dependências obrigatórias de todo o sistema.
+
+A implementação futura poderá exigir recursos como:
+
+* Cadastro de profissionais.
+* Cadastro de pacientes ou clientes.
+* Agendamento.
+* Gestão de atendimentos.
+* Agenda e disponibilidade.
+* Registro de informações operacionais.
+* Relatórios.
+* Controle de acesso por função.
+* Auditoria de operações.
+
+Esses itens representam possibilidades de evolução, não funcionalidades que devam ser consideradas concluídas no backend atual.
+
+## Proteção de dados
+
+Uma aplicação voltada à saúde exige cuidados adicionais com dados pessoais e informações sensíveis.
+
+Antes de colocar esses módulos em produção, será necessário definir e validar:
+
+* Quais dados serão coletados.
+* Quem poderá acessar cada categoria de informação.
+* Como os acessos serão registrados.
+* Como serão tratados consentimento e outras bases legais aplicáveis.
+* Como serão aplicadas as regras da LGPD.
+* Como os dados serão protegidos durante o armazenamento e a transmissão.
+* Quais serão as políticas de retenção e exclusão.
+* Como serão realizadas cópias de segurança e restauração.
+
+A arquitetura multi-tenant é uma base necessária, mas não substitui essas medidas.
+
+---
+
+# 29. Roadmap Oficial de Evolução
+
+A evolução do TAGOX Flow deve seguir uma sequência que preserve a integridade do sistema.
+
+## Etapa A — Fundação técnica
+
+**Estado:** implementada na base atual, com necessidade de continuidade das validações.
+
+Abrange:
+
+* Estrutura inicial do backend.
+* Domínio Tenant.
+* Domínio User.
+* Persistência.
+* Migrations iniciais.
+* Validação do schema.
+
+## Etapa B — Autenticação
+
+**Estado:** implementada na base atual.
+
+Abrange:
+
+* Spring Security.
+* BCrypt.
+* JWT.
+* Login.
+* Identificação de usuário e tenant.
+* Validação de estado de tenant e usuário no login.
+
+## Etapa C — RBAC
+
+**Estado:** fundação implementada e validada.
+
+Abrange:
+
+* Papéis padrão.
+* Associação UserRole.
+* Integração com segurança.
+* Proteção de endpoints.
+* Testes de autorização.
+
+## Etapa D — Onboarding inicial
+
+**Estado:** implementação concluída no estado local registrado; revisão e publicação documental pendentes.
+
+Abrange:
+
+* Endpoint público de onboarding.
+* Criação de tenant em TRIAL.
+* Criação do primeiro usuário em ATIVO.
+* Associação do papel ADMIN.
+* Transação atômica.
+* Resposta sem JWT.
+* Login separado.
+* Testes automatizados.
+
+## Etapa E — Revisão e consolidação
+
+**Estado:** próxima atividade imediata.
+
+Abrange:
+
+* Conferência da documentação.
+* Preservação das 45 seções.
+* Verificação de consistência com o código.
+* Revisão do diff.
+* Validação final apropriada.
+* Commit documental.
+* Publicação após revisão.
+
+## Etapa F — Módulos de negócio
+
+**Estado:** pendente.
+
+Abrange a implementação progressiva das funcionalidades da primeira vertical e das estruturas reutilizáveis.
+
+## Etapa G — Contratos e módulos comerciais
+
+**Estado:** pendente.
+
+Abrange planos, contratos, assinaturas, pagamentos e regras de habilitação comercial.
+
+## Etapa H — Frontend
+
+**Estado:** pendente.
+
+Abrange a aplicação React com TypeScript e a integração com o backend.
+
+## Etapa I — Homologação e produção
+
+**Estado:** pendente.
+
+Abrange testes integrados, revisão de segurança, observabilidade, infraestrutura e implantação.
+
+---
+
+# 30. Critérios de Prontidão para Produção
+
+A fundação atual do backend não deve ser confundida com a prontidão do produto completo para produção.
+
+Antes da implantação comercial, deverão ser avaliados os seguintes critérios.
+
+## Segurança
+
+* Revisão completa dos endpoints públicos e protegidos.
+* Verificação do ciclo de vida dos JWTs.
+* Proteção de segredos.
+* Revisão das permissões.
+* Testes de isolamento entre tenants.
+* Política de CORS adequada ao ambiente.
+* HTTPS.
+* Controle de abuso dos endpoints públicos.
+* Tratamento seguro de erros.
+
+## Banco de dados
+
+* Migrations testadas.
+* Estratégia de backup.
+* Procedimento de restauração validado.
+* Restrições de integridade revisadas.
+* Estratégia de migração entre versões.
+* Configuração adequada de conexões.
+* Monitoramento de falhas.
+
+## Aplicação
+
+* Configuração separada por ambiente.
+* Logs adequados.
+* Métricas e monitoramento.
+* Tratamento de falhas.
+* Testes automatizados.
+* Testes integrados.
+* Procedimentos de recuperação.
+
+## Produto
+
+* Módulos de negócio implementados.
+* Regras comerciais definidas.
+* Fluxos do usuário validados.
+* Frontend integrado.
+* Homologação concluída.
+* Documentação operacional disponível.
+
+## Operação
+
+* Processo de implantação.
+* Procedimento de rollback.
+* Monitoramento após implantação.
+* Responsáveis pela operação definidos.
+* Procedimentos para incidentes.
+* Política de atualização e manutenção.
+
+A prontidão para produção deverá ser declarada somente depois que esses requisitos forem avaliados e validados conforme o escopo de lançamento.
+
+---
+
+# 31. Critérios de Qualidade por Etapa
+
+Cada etapa deve ter critérios de conclusão verificáveis.
+
+## Domínio
+
+* Entidades coerentes.
+* Regras de negócio centralizadas.
+* Estados válidos.
+* Relacionamentos consistentes.
+* Ausência de duplicação desnecessária.
+
+## Persistência
+
+* Migrations versionadas.
+* Restrições de integridade.
+* Schema compatível com JPA.
+* Estratégia transacional correta.
+* Ausência de alterações manuais não documentadas.
+
+## Autenticação
+
+* Credenciais validadas.
+* Senhas armazenadas por hash.
+* JWT gerado somente após autenticação válida.
+* Tenant validado.
+* Usuário validado.
+* Estados bloqueados tratados corretamente.
+
+## Autorização
+
+* Endpoints protegidos.
+* Papéis verificados no backend.
+* Isolamento de tenant.
+* Testes de acesso autorizado e negado.
+
+## Onboarding
+
+* Tenant criado.
+* Usuário administrador criado.
+* Papel ADMIN associado.
+* Transação atômica.
+* Ausência de JWT na resposta.
+* Login separado.
+* Falhas sem persistência parcial.
+
+## Testes
+
+* Casos positivos.
+* Casos negativos.
+* Validações de entrada.
+* Cenários de segurança.
+* Testes transacionais.
+* Testes de isolamento.
+
+## Documentação
+
+* Correspondência com o código.
+* Histórico de decisões.
+* Pendências explícitas.
+* Migrations identificadas corretamente.
+* Histórico de validação atualizado.
+* Estado do Git descrito sem ambiguidades.
+
+Uma etapa só deve ser declarada concluída quando os critérios pertinentes tiverem sido verificados.
+
+---
+
+# 32. Estado Atual do Projeto
+
+Em 13/10/2026, o TAGOX Flow possui a fundação técnica necessária para autenticação, autorização inicial e onboarding de uma nova empresa.
+
+## Componentes implementados
+
+* Estrutura base do backend Java.
+* Spring Boot.
+* Persistência com PostgreSQL.
+* Flyway.
+* Domínio Tenant.
+* Domínio User.
+* Domínio Role.
+* Associação UserRole.
+* Papéis padrão.
+* Autenticação JWT.
+* Hash de senhas com BCrypt.
+* Configuração de Spring Security.
+* Validação do estado do tenant durante o login.
+* Validação do estado do usuário durante o login.
+* RBAC básico.
+* Proteção de endpoints administrativos.
+* Identificação do tenant por JWT.
+* Fundamentos de isolamento entre tenants.
+* Onboarding público.
+* Criação do primeiro administrador.
+* Transação do fluxo de onboarding.
+* Testes automatizados dos cenários implementados.
+
+## Última validação completa registrada
+
+```text
+Testes: 58
+Falhas: 0
+Erros: 0
+Ignorados: 0
+Build: SUCCESS
+```
+
+Essa validação foi executada em 13/10/2026, após as alterações no backend registradas no commit 445f73e, e concluiu com 58 testes aprovados, sem falhas, erros ou testes ignorados.
+
+## Pendências atuais
+
+* Revisão final integral da documentação.
+* Confirmação de que todas as 45 seções estão presentes.
+* Revisão do diff de `docs/ARCHITECTURE.md`.
+* Verificação de que não houve alterações inesperadas no código.
+* Validação final apropriada.
+* Commit da documentação.
+* Push após revisão.
+* Desenvolvimento dos módulos de negócio.
+* Frontend.
+* Contratos e assinaturas.
+* Homologação e preparação para produção.
+
+O projeto não deve ser considerado concluído integralmente. A fundação técnica está avançada, enquanto os módulos comerciais e operacionais permanecem em evolução.
+
+---
+
+# 33. Histórico do Git e Publicação
+
+O repositório utilizado é:
+
+```text
+Claytons1512FullStack/tagox-flow
+```
+
+A branch principal é:
+
+```text
 main
+```
 
-O commit foi publicado no GitHub.
+## Último commit local registrado
 
-42. Próxima Ação
+```text
+445f73e fix: validate user and tenant status during authentication
+```
 
-A próxima atividade oficial é concluir a revisão e a documentação da Etapa 10.1 — Fundação de Onboarding.
+Esse commit registra a evolução da validação dos estados de usuário e tenant durante a autenticação.
 
-### Implementações concluídas
+## Último commit publicado registrado
 
-* DTOs de requisição e resposta do onboarding.
-* `OnboardingService` para orquestrar a criação inicial.
-* Endpoint público `POST /api/onboarding`.
-* Criação do Tenant com status `TRIAL`.
-* Criação do primeiro usuário com status `ATIVO`.
-* Atribuição da role `ADMIN` ao primeiro usuário.
-* Persistência da associação `UserRole`.
-* Transação única para garantir consistência e rollback em caso de falha.
-* Validação dos dados de entrada.
-* Restrição de acesso ao endpoint `POST /api/tenants`, que exige autenticação.
-* Testes automatizados para o cadastro, validação, associação da role e rollback.
+```text
+697ef24 feat: implementa onboarding inicial do tenant
+```
 
-### Validação automatizada
+## Histórico recente registrado
 
-A suíte completa de testes foi executada com sucesso:
+```text
+445f73e fix: validate user and tenant status during authentication
+697ef24 feat: implementa onboarding inicial do tenant
+19c0a70 feat: habilita autenticacao de tenant em trial
+a6daa3c docs: atualiza arquitetura e onboarding
+0c0f031 feat: adiciona seed dos roles padrão
+```
 
-* 52 testes executados.
-* 0 falhas.
-* 0 erros.
-* Build concluído com sucesso.
+Os identificadores acima representam o histórico registrado no momento da atualização. O estado atual deve ser confirmado no Git antes de publicar novas alterações.
 
-### Próximas atividades
+## Situação do trabalho documental
 
-1. Revisar as alterações do código e da documentação.
-2. Conferir o diff completo e o estado do Git.
-3. Atualizar o estado oficial da arquitetura.
-4. Executar a validação final.
-5. Criar o commit da Etapa 10.1.
-6. Publicar as alterações no GitHub após a revisão.
-7. Avançar para a Etapa 11, conforme o planejamento arquitetural.
+O último estado informado antes da revisão final documental era:
 
-As migrations V1–V6 permanecem imutáveis.
+```text
+## main...origin/main [ahead 1]
+ M docs/ARCHITECTURE.md
+```
 
-Qualquer nova alteração de banco de dados deverá ser realizada através de uma nova migration Flyway, sem modificar as migrations já aplicadas.
+Isso indica que:
 
-### Regras de autenticação do Tenant
+* A branch local estava um commit à frente de `origin/main`.
+* A documentação estava modificada.
+* A documentação ainda não havia sido incluída em um novo commit.
+* A publicação das alterações documentais permanecia pendente.
 
-A autenticação deverá respeitar o estado do Tenant:
+A verificação de `git diff --check` não apresentou erros no estado registrado.
 
-* `TRIAL` → login permitido.
-* `ATIVO` → login permitido.
-* `SUSPENSO` → login bloqueado.
-* `CANCELADO` → login bloqueado.
+A alteração documental apresentou um diff extenso porque houve substituição e reorganização de conteúdo. Por isso, o tamanho do diff não deve ser usado como prova de que o documento foi integralmente revisado.
+
+## Regra de publicação
+
+Não executar `git push` sem revisar o conteúdo que será publicado.
+
+Antes de qualquer commit documental, confirmar:
+
+1. Todas as 45 seções estão presentes.
+2. Os dados técnicos estão coerentes.
+3. As decisões arquiteturais foram preservadas.
+4. As funcionalidades futuras continuam identificadas como pendentes.
+5. Nenhum arquivo de código foi alterado inesperadamente.
+6. O diff documental foi revisado.
+7. A validação apropriada foi concluída.
+
+---
+
+# 34. Próximas Ações Imediatas
+
+A próxima atividade é consolidar a documentação sem modificar o comportamento do backend.
+
+## Passo 1 — Revisar a estrutura documental
+
+Confirmar a presença das seções 1 a 45.
+
+Verificar se a numeração é contínua e se nenhum assunto relevante foi removido.
+
+## Passo 2 — Revisar o conteúdo
+
+Conferir especialmente:
+
+* Autenticação e JWT.
+* Estados de tenant e usuário.
+* RBAC.
+* Migration V6.
+* Onboarding.
+* Transações.
+* Testes.
+* Histórico do Git.
+* Estado atual do projeto.
+* Pendências comerciais.
+* Critérios de produção.
+
+## Passo 3 — Conferir o diff
+
+Revisar as alterações de `docs/ARCHITECTURE.md`.
+
+Confirmar que as alterações se limitam ao escopo documental pretendido.
+
+## Passo 4 — Conferir o estado do repositório
+
+Verificar branch, commits e arquivos modificados.
+
+Não presumir que o estado atual é igual ao último snapshot registrado.
+
+## Passo 5 — Validar a documentação
+
+Executar a verificação de formatação e revisar o documento integralmente.
+
+Como o trabalho desta etapa é documental, não se deve afirmar que o código foi revalidado sem executar os testes correspondentes.
+
+## Passo 6 — Criar o commit documental
+
+Somente após a revisão, criar um commit com uma mensagem coerente com o conteúdo efetivamente alterado.
+
+Exemplo de mensagem possível:
+
+```text
+docs: atualiza arquitetura e estado do TAGOX Flow
+```
+
+A mensagem é uma sugestão; deve corresponder ao diff final.
+
+## Passo 7 — Revisar e publicar
+
+Conferir o novo histórico e publicar as alterações somente após a revisão final.
+
+**Não misturar essa atividade com mudanças adicionais de código.**
+
+---
+
+# 35. Visão de Longo Prazo
+
+O TAGOX Flow deverá evoluir para uma plataforma SaaS modular, capaz de atender diferentes empresas com segurança e flexibilidade.
+
+A evolução deve preservar a separação entre:
+
+* Identidade.
+* Empresa.
+* Autenticação.
+* Autorização.
+* Contrato comercial.
+* Módulos contratados.
+* Dados operacionais.
+* Auditoria.
+
+## Evolução esperada
+
+A plataforma poderá incorporar:
+
+* Múltiplas verticais de negócio.
+* Módulos ativados por empresa.
+* Regras de permissão específicas.
+* Gestão de contratos.
+* Assinaturas e pagamentos.
+* Administração centralizada.
+* Relatórios.
+* Auditoria.
+* Integrações externas.
+* Frontend integrado.
+* Monitoramento operacional.
+* Escalabilidade de infraestrutura.
+
+A arquitetura deverá permitir que esses componentes sejam adicionados sem enfraquecer o isolamento multi-tenant.
+
+## Princípio de evolução
+
+A prioridade é construir uma fundação confiável antes de ampliar a quantidade de funcionalidades.
+
+A expansão do produto deve ocorrer por etapas verificáveis, mantendo o código, os testes e a documentação alinhados.
+
+---
+
+# 36. Considerações Técnicas Finais
+
+O TAGOX Flow está sendo desenvolvido de forma incremental.
+
+As decisões arquiteturais registradas até aqui devem orientar a implementação das próximas etapas.
+
+Os princípios essenciais são:
+
+1. Isolamento entre tenants.
+2. Autenticação segura.
+3. Autorização explícita.
+4. Separação entre onboarding e login.
+5. Transações consistentes.
+6. Migrations versionadas.
+7. DTOs para contratos externos.
+8. Regras de negócio centralizadas.
+9. Testes automatizados.
+10. Documentação alinhada ao código.
+11. Separação entre RBAC e contratação comercial.
+12. Validação antes da publicação.
+
+Nenhuma nova funcionalidade deve comprometer esses princípios sem uma decisão arquitetural explícita e documentada.
+
+---
+
+# 37. Homologação e Deploy
+
+A homologação e a implantação são etapas futuras do TAGOX Flow.
+
+A fundação técnica atual não significa que o produto completo esteja pronto para implantação comercial.
+
+## Homologação
+
+Antes de uma implantação, deverão ser validados:
+
+* Fluxo de onboarding.
+* Fluxo de login.
+* Validação dos estados de tenant.
+* Validação dos estados de usuário.
+* RBAC.
+* Isolamento entre empresas.
+* Persistência.
+* Migrations.
+* Tratamento de erros.
+* Integração entre frontend e backend.
+* Regras dos módulos de negócio.
+* Cenários de falha e recuperação.
+
+## Ambientes
+
+A estratégia definitiva deverá distinguir, no mínimo, os ambientes de desenvolvimento, testes e produção conforme as necessidades do projeto.
+
+Cada ambiente deverá utilizar configuração e credenciais apropriadas.
+
+Os dados de teste não devem ser confundidos com dados de produção.
+
+## Deploy
+
+O processo de implantação deverá definir:
+
+* Como a aplicação será construída.
+* Como as variáveis de ambiente serão configuradas.
+* Como o banco será preparado.
+* Como as migrations serão aplicadas.
+* Como a saúde da aplicação será verificada.
+* Como será feito o rollback.
+* Como serão monitorados erros após a implantação.
+
+**Estado atual:** homologação integrada e deploy de produção permanecem pendentes.
+
+---
+
+# 38. Critério de Prontidão para Produção
+
+A prontidão para produção deverá ser determinada por evidências verificáveis, e não apenas pela conclusão de uma etapa de desenvolvimento.
+
+## Critérios obrigatórios
+
+### Segurança
+
+* Autenticação revisada.
+* Autorização revisada.
+* Isolamento entre tenants testado.
+* Senhas protegidas.
+* Segredos fora do código-fonte.
+* Endpoints públicos revisados.
+* JWT e sua política de ciclo de vida revisados.
+
+### Banco
+
+* Migrations validadas.
+* Integridade referencial verificada.
+* Backups configurados.
+* Restauração testada.
+* Conexões configuradas adequadamente.
+
+### Aplicação
+
+* Testes automatizados aprovados.
+* Integração validada.
+* Tratamento de erros revisado.
+* Logs e monitoramento configurados.
+* Configuração de produção revisada.
+
+### Produto
+
+* Módulos previstos para o lançamento concluídos.
+* Frontend integrado, quando fizer parte do lançamento.
+* Fluxos principais homologados.
+* Regras comerciais definidas.
+* Documentação operacional disponível.
+
+### Operação
+
+* Deploy reproduzível.
+* Plano de rollback.
+* Monitoramento pós-implantação.
+* Procedimentos para incidentes.
+* Responsabilidades operacionais definidas.
+
+## Estado atual
+
+A fundação de autenticação, RBAC e onboarding possui validações registradas.
+
+Isso não comprova que todos os requisitos de produção estejam satisfeitos.
+
+A declaração de prontidão deverá ocorrer após uma avaliação específica do escopo real de lançamento.
+
+---
+
+# 39. Critério de Qualidade por Etapa
+
+Cada etapa do TAGOX Flow deve ter um critério objetivo de conclusão.
+
+## Critério de implementação
+
+A funcionalidade deve estar implementada no código correspondente.
+
+## Critério de integração
+
+Os componentes envolvidos devem funcionar em conjunto, respeitando os contratos estabelecidos.
+
+## Critério de segurança
+
+As permissões, as entradas e o isolamento de dados devem ser verificados nos cenários aplicáveis.
+
+## Critério de testes
+
+Os testes relevantes devem ser executados, e os resultados devem ser registrados com precisão.
+
+## Critério documental
+
+A documentação deve refletir o comportamento real da implementação.
+
+## Critério de publicação
+
+As alterações devem ser revisadas antes de serem incluídas no histórico compartilhado.
+
+## Aplicação ao onboarding
+
+O onboarding foi implementado com:
+
+* Endpoint público.
+* Criação de tenant.
+* Criação do primeiro usuário.
+* Associação do papel ADMIN.
+* Transação.
+* Resposta sem JWT.
+* Login independente.
+* Testes automatizados registrados.
+
+Em 13/10/2026, a suíte completa foi executada com 58 testes aprovados, sem falhas, erros ou testes ignorados, e o build foi concluído com BUILD SUCCESS.
+
+A revisão e publicação da documentação permanecem pendentes.
+
+## Regra geral
+
+Não marcar uma funcionalidade como concluída apenas porque o código foi escrito.
+
+A conclusão deve considerar implementação, integração, segurança, testes e documentação pertinentes ao escopo.
+
+---
+
+# 40. Registro Histórico do Estado do Projeto em 09/10/2026
+
+Esta seção registra o estado conhecido em 09/10/2026.
+
+## Repositório
+
+```text
+Projeto: TAGOX Flow
+Repositório: Claytons1512FullStack/tagox-flow
+Branch: main
+Backend: backend/
+Documentação: docs/ARCHITECTURE.md
+```
+
+## Histórico registrado
+
+```text
+Último commit local:
+445f73e fix: validate user and tenant status during authentication
+
+Último commit publicado:
+697ef24 feat: implementa onboarding inicial do tenant
+```
+
+O estado registrado indicava que a branch local estava um commit à frente da branch remota.
+
+## Código
+
+A fundação técnica contempla:
+
+* Tenant.
+* User.
+* Role.
+* UserRole.
+* PostgreSQL.
+* Flyway V1–V6.
+* JWT.
+* BCrypt.
+* Spring Security.
+* RBAC básico.
+* Validação dos estados de tenant e usuário durante o login.
+* Onboarding técnico.
+* Criação do primeiro administrador.
+* Testes de isolamento e autorização.
+
+## Banco
+
+As migrations V1 a V6 fazem parte do histórico conhecido.
+
+A migration V6 insere os papéis padrão.
+
+As migrations aplicadas devem permanecer imutáveis.
+
+## Testes
+
+Última execução completa registrada:
+
+```text
+58 testes aprovados
+0 falhas
+0 erros
+0 ignorados
+BUILD SUCCESS
+```
+
+## Documentação
+
+A documentação foi modificada para atualização.
+
+A verificação `git diff --check` não apresentou erros no estado registrado.
+
+O diff é extenso e exige revisão de conteúdo e estrutura.
+
+## Estado de conclusão
+
+**Implementado:** fundação técnica, autenticação, RBAC básico, onboarding e validações registradas.
+
+**Pendente:** revisão documental final, commit e publicação da documentação, além das etapas futuras de produto.
+
+Este estado é um registro histórico. Antes de executar novas operações, o estado atual do Git e dos testes deve ser confirmado.
+
+---
+
+# 41. Último Estado Validado — 13/10/2026
+
+O último estado técnico validado registrado para esta atualização apresenta os seguintes resultados.
+
+## Testes automatizados
+
+```text
+Total: 58
+Falhas: 0
+Erros: 0
+Ignorados: 0
+Resultado: BUILD SUCCESS
+```
+
+A validação foi executada em 13/10/2026, após as alterações no backend registradas no commit 445f73e.
 
 
-A Etapa 10.1 somente será considerada concluída após a revisão final, a atualização da documentação e a publicação das alterações.
+## Autenticação
 
-43. Visão de Longo Prazo
+O fluxo de login valida os estados do tenant e do usuário antes da emissão do JWT.
 
-O TAGOX Flow não está sendo construído como uma aplicação isolada para uma única empresa.
+Os tenants em `TRIAL` e `ATIVO` podem autenticar conforme a regra implementada.
 
-A arquitetura está sendo preparada como uma plataforma SaaS da TAGOX Tech.
+Os tenants em `SUSPENSO` e `CANCELADO` devem ser bloqueados.
 
-O Core deverá permitir:
+Os usuários em `INATIVO` e `BLOQUEADO` devem ser bloqueados.
 
-TAGOX Flow Core
-       │
-       ├── Psicologia / Saúde
-       │
-       ├── Medicina
-       │
-       ├── Jurídico
-       │
-       └── Outras verticais
+## RBAC
 
-Cada vertical poderá possuir seus próprios módulos e regras específicas, mantendo a fundação comum de:
+Os cenários HTTP registrados demonstram que o papel ADMIN pode criar usuários, enquanto PROFISSIONAL e ASSISTENTE recebem HTTP 403 nessa operação.
 
-Tenants;
-usuários;
-autenticação;
-autorização;
-RBAC;
-segurança;
-isolamento;
-infraestrutura;
-auditoria;
-integrações.
-44. Considerações Finais
+## Onboarding
 
-O TAGOX Flow já possui uma fundação importante do produto.
+O fluxo cria o tenant, o primeiro usuário e a associação ADMIN.
 
-As etapas iniciais estabeleceram:
+A operação é transacional e não deve emitir JWT nem autenticar automaticamente o usuário.
 
-arquitetura multi-tenant;
-persistência;
-Flyway;
-usuários;
-JWT;
-autenticação;
-RBAC;
-autorização;
-isolamento entre Tenants;
-testes automatizados;
-validação HTTP real.
+## Git
 
-A Etapa 10 consolidou a autorização real através do Spring Security.
+O último estado registrado apontava:
 
-A Etapa 10.1 está em andamento.
+* Branch local `main`.
+* Um commit local à frente de `origin/main`.
+* `docs/ARCHITECTURE.md` modificado.
+* `git diff --check` sem erros.
 
-A primeira inconsistência identificada, relacionada à dependência de inserção manual das roles padrão, foi resolvida através da migration V6.
+## Limite desta validação
 
-O próximo objetivo é concluir a Fundação de Onboarding, validando o comportamento de autenticação do Tenant em TRIAL e implementando o fluxo transacional de criação inicial:
+Os resultados acima descrevem o último estado registrado.
 
-Tenant
-↓
-TRIAL
-↓
-primeiro User
-↓
-ATIVO
-↓
+A revisão documental final e a publicação não devem ser consideradas concluídas até que sejam efetivamente verificadas.
+
+---
+
+# 42. Próxima Ação
+
+A próxima ação oficial é finalizar a documentação sem alterar o comportamento do código.
+
+## Ordem de execução
+
+1. Conferir a existência das 45 seções.
+2. Verificar a numeração e a continuidade dos assuntos.
+3. Revisar as informações técnicas.
+4. Confirmar as decisões do onboarding.
+5. Conferir o histórico de migrations.
+6. Conferir os commits registrados.
+7. Revisar integralmente o diff.
+8. Confirmar que não existem alterações inesperadas no código.
+9. Executar as validações apropriadas.
+10. Criar o commit documental.
+11. Revisar o novo histórico.
+12. Publicar as alterações somente após a revisão.
+
+## Restrições
+
+* Não alterar migrations já aplicadas.
+* Não implementar funcionalidades futuras dentro desta etapa documental.
+* Não modificar autenticação ou autorização sem uma necessidade identificada.
+* Registrar a data e o resultado de cada execução de testes somente após sua confirmação.
+* Não publicar alterações sem revisar o diff.
+* Não remover seções da documentação para simplificar o arquivo.
+
+## Resultado esperado
+
+Um documento completo, coerente com o código e com as decisões tomadas, mantendo as 45 seções e distinguindo claramente o estado implementado das etapas futuras.
+
+---
+
+# 43. Visão de Longo Prazo
+
+O objetivo de longo prazo é transformar o TAGOX Flow em uma plataforma SaaS modular, segura e preparada para diferentes segmentos profissionais.
+
+A plataforma deverá permitir que empresas utilizem recursos compatíveis com seus contratos e que os usuários acessem apenas as funcionalidades autorizadas.
+
+## Pilares
+
+### Multi-tenancy
+
+Isolamento dos dados por empresa.
+
+### Segurança
+
+Autenticação, autorização, controle de acesso e proteção dos dados.
+
+### Modularidade
+
+Módulos de negócio com responsabilidades bem definidas.
+
+### Evolução comercial
+
+Contratos, assinaturas, pagamentos e habilitação de módulos.
+
+### Escalabilidade
+
+Arquitetura preparada para crescer sem perder a separação de responsabilidades.
+
+### Observabilidade
+
+Capacidade de identificar falhas e acompanhar o comportamento do sistema.
+
+### Manutenibilidade
+
+Código organizado, testes automatizados e documentação atualizada.
+
+## Direção arquitetural
+
+A expansão deverá ocorrer por etapas, utilizando a fundação técnica atual e evitando a implementação prematura de funcionalidades comerciais sem regras definidas.
+
+O crescimento do sistema deverá preservar a integridade dos dados e o isolamento entre empresas.
+
+---
+
+# 44. Considerações Finais
+
+O TAGOX Flow está em desenvolvimento incremental.
+
+A fundação de tenant, usuário, papéis, autenticação, autorização inicial e onboarding representa uma etapa importante da arquitetura.
+
+As decisões estabelecidas até aqui devem ser mantidas durante a evolução:
+
+* O onboarding cria o tenant e o primeiro administrador.
+* O tenant inicia em `TRIAL`.
+* O usuário inicial inicia em `ATIVO`.
+* O primeiro usuário recebe o papel `ADMIN`.
+* O onboarding não gera JWT.
+* O login permanece separado.
+* A autenticação valida os estados do tenant e do usuário.
+* O RBAC não substitui o isolamento de tenant.
+* A contratação comercial permanece separada da criação técnica da empresa.
+* As migrations aplicadas são imutáveis.
+* A documentação deve refletir o código real.
+* A publicação deve ocorrer somente após revisão.
+
+O projeto não deve ser tratado como concluído em sua totalidade. As funcionalidades comerciais, os módulos de negócio, o frontend e a preparação para produção permanecem etapas futuras.
+
+A prioridade imediata é consolidar a documentação, revisar o estado do repositório e publicar as alterações de forma controlada.
+
+---
+
+# 45. Registro Oficial da Atualização de 09/10/2026
+
+Esta seção preserva o registro histórico consolidado em 09/10/2026. As informações referentes à execução dos testes em 13/10/2026 foram acrescentadas posteriormente como atualização complementar, sem alterar a data ou o conteúdo histórico das decisões originalmente registradas.
+
+## 45.1. Validação de estados na autenticação
+
+Foi registrado o commit local:
+
+```text
+445f73e fix: validate user and tenant status during authentication
+```
+
+A alteração contempla a validação dos estados do tenant e do usuário durante o login.
+
+A autenticação permite tenants em `TRIAL` e `ATIVO` e bloqueia tenants em `SUSPENSO` e `CANCELADO`.
+
+Usuários `INATIVO` e `BLOQUEADO` também devem ter a autenticação recusada.
+
+## 45.2. Onboarding técnico
+
+O onboarding inicial está implementado no estado local registrado.
+
+O endpoint público:
+
+```http
+POST /api/onboarding
+```
+
+cria o tenant, o primeiro usuário e a associação ao papel `ADMIN`.
+
+A operação é transacional e não gera JWT.
+
+O login continua sendo realizado separadamente.
+
+## 45.3. Papéis padrão
+
+A migration V6 registrada é:
+
+```text
+V6__seed_standard_roles.sql
+```
+
+Ela insere os papéis padrão:
+
+```text
 ADMIN
-↓
-UserRole
+PROFISSIONAL
+ASSISTENTE
+```
 
-Após a conclusão do onboarding, o projeto estará preparado para entrar na construção dos módulos de negócio.
+As migrations V1 a V6 devem permanecer imutáveis.
 
-A evolução continuará seguindo uma regra fundamental:
+## 45.4. Testes
 
-Primeiro construir uma fundação segura e consistente; depois construir funcionalidades sobre ela.
+A última execução completa registrada apresentou:
 
-O objetivo final é entregar um TAGOX Flow que não apenas funcione em desenvolvimento, mas possua as condições técnicas necessárias para evoluir até um produto SaaS real, seguro, multi-tenant, modular e preparado para produção.
+```text
+58 testes
+0 falhas
+0 erros
+0 ignorados
+BUILD SUCCESS
+```
 
-Estado oficial do documento
+Este resultado pertence ao registro histórico de 09/10/2026. Em 13/10/2026, os testes foram executados novamente: 58 testes, 0 falhas, 0 erros, 0 ignorados e BUILD SUCCESS.
 
-Última atualização: 08/10/2026
+## 45.5. Histórico do Git
 
-Etapa concluída: 10 — Autorização RBAC
+Último commit local registrado:
 
-Etapa 10.1: Fundação de Onboarding — implementação concluída, em revisão final.
+```text
+445f73e
+```
 
-Subetapas concluídas:
+Último commit publicado registrado:
 
-* 10.1.1 — Roles padrão garantidas pela migration V6.
-* 10.1.2 — TRIAL funcional.
-* 10.1.3 — Primeiro ADMIN criado transacionalmente.
-* 10.1.4 — Endpoint público POST /api/onboarding implementado.
+```text
+697ef24
+```
 
-Segurança:
+O estado anterior à conclusão da revisão documental indicava a branch local um commit à frente de `origin/main`, com `docs/ARCHITECTURE.md` modificado.
 
-* POST /api/onboarding — público.
-* POST /api/auth/login — público.
-* POST /api/tenants — exige autenticação.
-* Demais regras de autenticação e autorização preservadas.
+## 45.6. Decisões preservadas
 
-Testes registrados: 52/52 passando; 0 falhas e 0 erros.
+Permanecem válidas as decisões de:
 
-Último commit publicado antes das alterações atuais: 19c0a70 feat: habilita autenticacao de tenant em trial.
+* Separar onboarding e login.
+* Não emitir JWT durante o onboarding.
+* Criar o tenant em TRIAL.
+* Criar o primeiro usuário em ATIVO.
+* Associar o papel ADMIN ao primeiro usuário.
+* Utilizar transação para evitar persistência parcial.
+* Validar estados durante a autenticação.
+* Separar RBAC das regras comerciais.
+* Manter imutáveis as migrations aplicadas.
 
-Último commit registrado na documentação: a6daa3c docs: atualiza arquitetura e onboarding.
+## 45.7. Pendências
 
-Estado atual do trabalho: onboarding implementado e validado pela suíte automatizada; revisão final do código, documentação e diff pendente antes do commit e do push.
+Permanecem pendentes:
 
-Próxima atividade: concluir a revisão da Etapa 10.1 e, após a validação final, publicar as alterações no GitHub.
+* Revisão final da documentação.
+* Conferência integral das 45 seções.
+* Revisão do diff.
+* Verificação do estado atual do Git.
+* Commit documental.
+* Publicação após revisão.
+* Desenvolvimento dos módulos de negócio.
+* Gestão de contratos, planos e pagamentos.
+* Frontend.
+* Homologação e preparação para produção.
+
+## 45.8. Estado oficial
+
+**No estado conhecido em 09/10/2026, o TAGOX Flow possuía a fundação de autenticação, RBAC básico e onboarding técnico implementada, com 58 testes aprovados na validação registrada naquela data.**
+
+**A documentação ainda precisa passar pela revisão final e pelo processo de publicação.**
+
+Este registro consolida o estado conhecido em 09/10/2026 e deverá ser atualizado quando novas alterações forem implementadas e validadas.
