@@ -8,11 +8,11 @@
 **Banco de dados:** PostgreSQL 18.6
 **Migrações:** Flyway
 **Frontend planejado:** React + TypeScript
-**Último commit local registrado:** `445f73e` — `fix: validate user and tenant status during authentication`
-**Último commit publicado registrado:** `697ef24` — `feat: implementa onboarding inicial do tenant`
-**Última validação completa registrada (13/10/2026):** 58 testes aprovados, 0 falhas, 0 erros, 0 testes ignorados; BUILD SUCCESS.
-**Data de atualização da documentação:** 13/10/2026
-**Estado da documentação:** atualização em revisão; commit e publicação pendentes.
+**Último commit de código publicado:** `f57e7f5` — `test: valida unicidade de email por tenant`
+**Estado do Git antes desta atualização documental (14/10/2026):** branch `main` sincronizada com `origin/main`; diretório de trabalho limpo.
+**Última validação completa confirmada (14/10/2026):** 71 testes aprovados, 0 falhas, 0 erros, 0 testes ignorados; BUILD SUCCESS.
+**Data de atualização da documentação:** 14/10/2026
+**Estado da documentação:** revisão do estado técnico atualizada em 14/10/2026; revisão integral do documento em andamento.
 
 > **Regra de atualização:** este documento registra a arquitetura, as decisões tomadas, as funcionalidades implementadas e as pendências conhecidas. Uma funcionalidade só deve ser considerada concluída quando sua implementação e sua validação correspondente tiverem sido verificadas.
 
@@ -921,6 +921,8 @@ O sistema também possui testes registrados para validar o isolamento entre tena
 
 O objetivo é impedir que a identidade de uma empresa seja utilizada para acessar dados pertencentes a outra.
 
+A unicidade do e-mail é aplicada dentro de cada tenant: o mesmo endereço pode estar cadastrado em empresas diferentes, mas não pode ser duplicado entre usuários do mesmo tenant. Essa regra possui cobertura em testes automatizados.
+
 ## Continuidade da validação
 
 A cada novo endpoint protegido, devem ser avaliados:
@@ -982,17 +984,18 @@ No onboarding, falhas durante a criação do tenant, do usuário ou da associaç
 
 O projeto possui testes automatizados para a fundação de domínio, autenticação, autorização e onboarding.
 
-A última execução completa registrada apresentou:
+A última execução completa confirmada em 14/10/2026 apresentou:
 
 ```text
-58 testes executados
+71 testes executados
 0 falhas
 0 erros
 0 testes ignorados
 BUILD SUCCESS
 ```
 
-**A suíte foi executada em 13/10/2026 e validou o backend. Essa execução não substitui a revisão documental nem a conferência do diff desta atualização.**
+**Histórico:** em 13/10/2026, a suíte registrou 58 testes aprovados. Em 14/10/2026, após a inclusão e validação de testes adicionais, a suíte completa passou a apresentar 71 testes aprovados.
+
 
 ## Categorias de testes registradas
 
@@ -1080,7 +1083,7 @@ A matriz de permissões por módulo deverá ser ampliada à medida que novas fun
 
 A Etapa 10.1 implementa o fluxo técnico inicial de cadastro de uma nova empresa.
 
-A implementação está registrada como concluída no código local, com validações automatizadas e revisão final documental pendente.
+A implementação está concluída e publicada no repositório principal. A revisão final da documentação permanece pendente.
 
 ## Objetivo
 
@@ -1154,7 +1157,7 @@ Essas responsabilidades permanecem separadas do cadastro técnico.
 
 ## Validação
 
-Em 13/10/2026, a suíte completa foi executada com 58 testes aprovados, sem falhas, erros ou testes ignorados, e o build foi concluído com BUILD SUCCESS.
+Em 13/10/2026, a suíte completa registrou 58 testes aprovados. Na execução completa mais recente, em 14/10/2026, foram registrados 71 testes aprovados, sem falhas, erros ou testes ignorados, com BUILD SUCCESS.
 
 O estado local inclui a implementação do onboarding e a validação dos estados de tenant e usuário durante a autenticação.
 
@@ -1567,7 +1570,7 @@ Uma etapa só deve ser declarada concluída quando os critérios pertinentes tiv
 
 # 32. Estado Atual do Projeto
 
-Em 13/10/2026, o TAGOX Flow possui a fundação técnica necessária para autenticação, autorização inicial e onboarding de uma nova empresa.
+Em 14/10/2026, o TAGOX Flow possui a fundação técnica para autenticação, autorização inicial e onboarding de uma nova empresa, com 71 testes aprovados na última execução completa.
 
 ## Componentes implementados
 
@@ -1594,17 +1597,17 @@ Em 13/10/2026, o TAGOX Flow possui a fundação técnica necessária para autent
 * Transação do fluxo de onboarding.
 * Testes automatizados dos cenários implementados.
 
-## Última validação completa registrada
+## Última validação completa confirmada em 14/10/2026
 
 ```text
-Testes: 58
+Testes: 71
 Falhas: 0
 Erros: 0
 Ignorados: 0
 Build: SUCCESS
 ```
 
-Essa validação foi executada em 13/10/2026, após as alterações no backend registradas no commit 445f73e, e concluiu com 58 testes aprovados, sem falhas, erros ou testes ignorados.
+A validação completa confirmada em 14/10/2026, após a inclusão de testes adicionais, concluiu com 71 testes aprovados, sem falhas, erros ou testes ignorados; BUILD SUCCESS.
 
 ## Pendências atuais
 
@@ -1632,57 +1635,36 @@ O repositório utilizado é:
 Claytons1512FullStack/tagox-flow
 ```
 
-A branch principal é:
+A branch principal é `main`.
+
+## Último commit publicado confirmado
 
 ```text
-main
+f57e7f5 test: valida unicidade de email por tenant
 ```
 
-## Último commit local registrado
+## Histórico recente confirmado em 14/10/2026
 
 ```text
-445f73e fix: validate user and tenant status during authentication
-```
-
-Esse commit registra a evolução da validação dos estados de usuário e tenant durante a autenticação.
-
-## Último commit publicado registrado
-
-```text
-697ef24 feat: implementa onboarding inicial do tenant
-```
-
-## Histórico recente registrado
-
-```text
+f57e7f5 test: valida unicidade de email por tenant
+69b8f0c test: valida cadastro e associacao de roles
+cbe7c08 feat: implementa módulo de pacientes
+fb2178d docs: atualiza arquitetura e estado do TAGOX Flow
 445f73e fix: validate user and tenant status during authentication
 697ef24 feat: implementa onboarding inicial do tenant
 19c0a70 feat: habilita autenticacao de tenant em trial
 a6daa3c docs: atualiza arquitetura e onboarding
-0c0f031 feat: adiciona seed dos roles padrão
 ```
 
-Os identificadores acima representam o histórico registrado no momento da atualização. O estado atual deve ser confirmado no Git antes de publicar novas alterações.
+Os commits acima foram conferidos com `git log -8 --oneline --decorate` em 14/10/2026. Os registros anteriores a `f57e7f5` permanecem no histórico do repositório.
 
-## Situação do trabalho documental
+## Estado do Git confirmado em 14/10/2026
 
-O último estado informado antes da revisão final documental era:
+Na última verificação, `main` e `origin/main` apontavam para `f57e7f5`, sem divergência entre as referências. A situação do diretório de trabalho deve ser verificada novamente antes do commit documental, pois esta revisão modifica o arquivo de arquitetura.
 
-```text
-## main...origin/main [ahead 1]
- M docs/ARCHITECTURE.md
-```
+## Registro histórico do trabalho documental
 
-Isso indica que:
-
-* A branch local estava um commit à frente de `origin/main`.
-* A documentação estava modificada.
-* A documentação ainda não havia sido incluída em um novo commit.
-* A publicação das alterações documentais permanecia pendente.
-
-A verificação de `git diff --check` não apresentou erros no estado registrado.
-
-A alteração documental apresentou um diff extenso porque houve substituição e reorganização de conteúdo. Por isso, o tamanho do diff não deve ser usado como prova de que o documento foi integralmente revisado.
+Em uma etapa anterior, a documentação foi registrada como modificada, com a branch local um commit à frente de `origin/main`. Esse estado é histórico e não representa a situação confirmada em 14/10/2026.
 
 ## Regra de publicação
 
@@ -1977,7 +1959,7 @@ O onboarding foi implementado com:
 * Login independente.
 * Testes automatizados registrados.
 
-Em 13/10/2026, a suíte completa foi executada com 58 testes aprovados, sem falhas, erros ou testes ignorados, e o build foi concluído com BUILD SUCCESS.
+Em 13/10/2026, a suíte completa registrou 58 testes aprovados. Na execução completa mais recente, em 14/10/2026, foram registrados 71 testes aprovados, sem falhas, erros ou testes ignorados, com BUILD SUCCESS.
 
 A revisão e publicação da documentação permanecem pendentes.
 
