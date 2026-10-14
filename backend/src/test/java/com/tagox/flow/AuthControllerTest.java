@@ -1,5 +1,6 @@
 package com.tagox.flow;
 
+import com.tagox.flow.domain.role.RoleType;
 import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
@@ -17,8 +18,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
@@ -86,10 +87,8 @@ class AuthControllerTest {
                                 .content(json)
                 )
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.token")
-                        .isNotEmpty())
-                .andExpect(jsonPath("$.tokenType")
-                        .value("Bearer"))
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.tokenType").value("Bearer"))
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -180,6 +179,7 @@ class AuthControllerTest {
         request.setNome("Usuario Login");
         request.setEmail("login@teste.com");
         request.setSenha("senha-login");
+        request.setRole(RoleType.PROFISSIONAL);
 
         usuario = userService.criarUsuario(
                 request,

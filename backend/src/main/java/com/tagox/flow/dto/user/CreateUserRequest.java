@@ -1,7 +1,9 @@
 package com.tagox.flow.dto.user;
 
+import com.tagox.flow.domain.role.RoleType;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 public class CreateUserRequest {
 
@@ -15,6 +17,9 @@ public class CreateUserRequest {
     @NotBlank
     private String senha;
 
+    @NotNull
+    private RoleType role;
+
     public String getNome() {
         return nome;
     }
@@ -27,6 +32,10 @@ public class CreateUserRequest {
         return senha;
     }
 
+    public RoleType getRole() {
+        return role;
+    }
+
     public void setNome(String nome) {
         this.nome = nome;
     }
@@ -37,5 +46,9 @@ public class CreateUserRequest {
 
     public void setSenha(String senha) {
         this.senha = senha;
+    }
+
+    public void setRole(RoleType role) {
+        this.role = role;
     }
 }

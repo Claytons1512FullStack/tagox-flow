@@ -15,21 +15,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -64,7 +65,6 @@ class UserControllerTest {
     void prepararBanco() {
 
         userRepository.deleteAll();
-
         tenantRepository.deleteAll();
 
         tenant = new Tenant(
@@ -121,7 +121,8 @@ class UserControllerTest {
                 {
                     "nome": "Clayton Usuario",
                     "email": "clayton@teste.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -152,7 +153,8 @@ class UserControllerTest {
                 {
                     "nome": "Primeiro Usuario",
                     "email": "usuario@teste.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -198,7 +200,8 @@ class UserControllerTest {
                 {
                     "nome": "Usuario Invalido",
                     "email": "usuario@teste.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -275,7 +278,8 @@ class UserControllerTest {
                 {
                     "nome": "Usuario Empresa A",
                     "email": "mesmo@email.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -283,7 +287,8 @@ class UserControllerTest {
                 {
                     "nome": "Usuario Empresa B",
                     "email": "mesmo@email.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -347,7 +352,8 @@ class UserControllerTest {
                 {
                     "nome": "Usuario Profissional",
                     "email": "novo-profissional@teste.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -386,7 +392,8 @@ class UserControllerTest {
                 {
                     "nome": "Usuario Assistente",
                     "email": "novo-assistente@teste.com",
-                    "senha": "senha-teste"
+                    "senha": "senha-teste",
+                    "role": "PROFISSIONAL"
                 }
                 """;
 
@@ -400,6 +407,39 @@ class UserControllerTest {
                                 .content(json)
                 )
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void adminNaoPodeCriarOutroAdminPeloCadastroComum() throws Exception {
+
+        String json = """
+                {
+                    "nome": "Outro Administrador",
+                    "email": "outro-admin@teste.com",
+                    "senha": "senha-teste",
+                    "role": "ADMIN"
+                }
+                """;
+
+        mockMvc.perform(
+                        post("/api/users")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + token
+                                )
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(json)
+                )
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message")
+                        .value(
+                                "O cadastro comum permite apenas os papéis PROFISSIONAL ou ASSISTENTE"
+                        ));
+
+        assertThat(userRepository.existsByTenantIdAndEmail(
+                tenant.getId(),
+                "outro-admin@teste.com"
+        )).isFalse();
     }
 
     @Test
@@ -422,7 +462,8 @@ class UserControllerTest {
                                         {
                                             "nome": "Novo Usuario",
                                             "email": "novo@teste.com",
-                                            "senha": "senha-teste"
+                                            "senha": "senha-teste",
+                                            "role": "PROFISSIONAL"
                                         }
                                         """)
                 )
@@ -449,7 +490,8 @@ class UserControllerTest {
                                         {
                                             "nome": "Novo Usuario",
                                             "email": "novo@teste.com",
-                                            "senha": "senha-teste"
+                                            "senha": "senha-teste",
+                                            "role": "PROFISSIONAL"
                                         }
                                         """)
                 )
@@ -476,7 +518,8 @@ class UserControllerTest {
                                         {
                                             "nome": "Novo Usuario",
                                             "email": "novo@teste.com",
-                                            "senha": "senha-teste"
+                                            "senha": "senha-teste",
+                                            "role": "PROFISSIONAL"
                                         }
                                         """)
                 )
@@ -503,7 +546,8 @@ class UserControllerTest {
                                         {
                                             "nome": "Novo Usuario",
                                             "email": "novo@teste.com",
-                                            "senha": "senha-teste"
+                                            "senha": "senha-teste",
+                                            "role": "PROFISSIONAL"
                                         }
                                         """)
                 )

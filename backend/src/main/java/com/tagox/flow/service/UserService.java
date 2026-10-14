@@ -1,11 +1,13 @@
 package com.tagox.flow.service;
 
+import com.tagox.flow.domain.role.RoleType;
 import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.dto.user.CreateUserRequest;
+import com.tagox.flow.exception.BusinessException;
 import com.tagox.flow.exception.DuplicateResourceException;
 import com.tagox.flow.exception.ResourceNotFoundException;
 
@@ -21,21 +23,64 @@ public class UserService {
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
+    private final UserRoleService userRoleService;
 
     public UserService(
             UserRepository userRepository,
             TenantRepository tenantRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            UserRoleService userRoleService
     ) {
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
         this.passwordEncoder = passwordEncoder;
+        this.userRoleService = userRoleService;
     }
 
     @Transactional
     public User criarUsuario(
             CreateUserRequest request,
             UUID tenantId
+    ) {
+
+        RoleType role = request.getRole();
+
+        if (role == null) {
+            throw new BusinessException(
+                    "O papel do usuário deve ser informado"
+            );
+        }
+
+        if (role == RoleType.ADMIN) {
+            throw new BusinessException(
+                    "O cadastro comum permite apenas os papéis PROFISSIONAL ou ASSISTENTE"
+            );
+        }
+
+        return criarUsuarioComRole(
+                request,
+                tenantId,
+                role
+        );
+    }
+
+    @Transactional
+    public User criarAdministradorInicial(
+            CreateUserRequest request,
+            UUID tenantId
+    ) {
+
+        return criarUsuarioComRole(
+                request,
+                tenantId,
+                RoleType.ADMIN
+        );
+    }
+
+    private User criarUsuarioComRole(
+            CreateUserRequest request,
+            UUID tenantId,
+            RoleType role
     ) {
 
         Tenant tenant = tenantRepository.findById(
@@ -47,13 +92,13 @@ public class UserService {
         );
 
         String emailNormalizado = request.getEmail()
+                .trim()
                 .toLowerCase();
 
         if (userRepository.existsByTenantIdAndEmail(
                 tenant.getId(),
                 emailNormalizado
         )) {
-
             throw new DuplicateResourceException(
                     "Já existe um usuário com este email neste tenant"
             );
@@ -72,6 +117,13 @@ public class UserService {
                 UserStatus.ATIVO
         );
 
-        return userRepository.save(user);
+        User usuarioSalvo = userRepository.save(user);
+
+        userRoleService.adicionarRole(
+                usuarioSalvo.getId(),
+                role
+        );
+
+        return usuarioSalvo;
     }
 }

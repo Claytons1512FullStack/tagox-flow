@@ -17,16 +17,13 @@ public class OnboardingService {
 
     private final TenantService tenantService;
     private final UserService userService;
-    private final UserRoleService userRoleService;
 
     public OnboardingService(
             TenantService tenantService,
-            UserService userService,
-            UserRoleService userRoleService
+            UserService userService
     ) {
         this.tenantService = tenantService;
         this.userService = userService;
-        this.userRoleService = userRoleService;
     }
 
     @Transactional
@@ -48,15 +45,11 @@ public class OnboardingService {
         administradorRequest.setNome(dadosAdministrador.nome());
         administradorRequest.setEmail(dadosAdministrador.email());
         administradorRequest.setSenha(dadosAdministrador.senha());
+        administradorRequest.setRole(RoleType.ADMIN);
 
-        User administrador = userService.criarUsuario(
+        User administrador = userService.criarAdministradorInicial(
                 administradorRequest,
                 tenant.getId()
-        );
-
-        userRoleService.adicionarRole(
-                administrador.getId(),
-                RoleType.ADMIN
         );
 
         TenantResponseDTO tenantResponse = new TenantResponseDTO(
@@ -74,5 +67,4 @@ public class OnboardingService {
                 administradorResponse
         );
     }
-
 }

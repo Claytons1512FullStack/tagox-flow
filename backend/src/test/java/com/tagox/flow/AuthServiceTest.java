@@ -1,5 +1,6 @@
 package com.tagox.flow;
 
+import com.tagox.flow.domain.role.RoleType;
 import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
@@ -292,6 +293,7 @@ class AuthServiceTest {
         requestUsuarioB.setNome("Usuario Empresa B");
         requestUsuarioB.setEmail("mesmo@email.com");
         requestUsuarioB.setSenha("senha-b");
+        requestUsuarioB.setRole(RoleType.PROFISSIONAL);
 
         User usuarioB = userService.criarUsuario(
                 requestUsuarioB,
@@ -340,6 +342,7 @@ class AuthServiceTest {
         request.setNome(nome);
         request.setEmail(email);
         request.setSenha(senha);
+        request.setRole(RoleType.PROFISSIONAL);
 
         return userService.criarUsuario(
                 request,

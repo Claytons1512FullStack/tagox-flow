@@ -1,11 +1,15 @@
 package com.tagox.flow;
 
+import com.tagox.flow.domain.role.Role;
+import com.tagox.flow.domain.role.RoleRepository;
+import com.tagox.flow.domain.role.RoleType;
 import com.tagox.flow.domain.tenant.Tenant;
 import com.tagox.flow.domain.tenant.TenantRepository;
 import com.tagox.flow.domain.tenant.TenantStatus;
 import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
+import com.tagox.flow.domain.userrole.UserRoleRepository;
 import com.tagox.flow.dto.user.CreateUserRequest;
 import com.tagox.flow.service.UserService;
 
@@ -17,6 +21,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +37,13 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Autowired
+    private UserRoleRepository userRoleRepository;
+
+    @Autowired
     private TenantRepository tenantRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -42,8 +53,11 @@ class UserServiceTest {
     @BeforeEach
     void prepararBanco() {
 
+        userRoleRepository.deleteAll();
         userRepository.deleteAll();
         tenantRepository.deleteAll();
+
+        garantirPapeisPadrao();
 
         tenant = new Tenant(
                 UUID.randomUUID(),
@@ -58,6 +72,32 @@ class UserServiceTest {
         tenantRepository.save(tenant);
     }
 
+    private void garantirPapeisPadrao() {
+
+        List<Role> papeisPadrao = List.of(
+                new Role(
+                        UUID.randomUUID(),
+                        RoleType.ADMIN,
+                        "Administrador"
+                ),
+                new Role(
+                        UUID.randomUUID(),
+                        RoleType.PROFISSIONAL,
+                        "Profissional"
+                ),
+                new Role(
+                        UUID.randomUUID(),
+                        RoleType.ASSISTENTE,
+                        "Assistente"
+                )
+        );
+
+        for (Role papel : papeisPadrao) {
+            roleRepository.findByTipo(papel.getTipo())
+                    .orElseGet(() -> roleRepository.save(papel));
+        }
+    }
+
     @Test
     void deveArmazenarSenhaComoHashBCrypt() {
 
@@ -66,6 +106,7 @@ class UserServiceTest {
         request.setNome("Usuario Service");
         request.setEmail("service@teste.com");
         request.setSenha("senha-secreta");
+        request.setRole(RoleType.PROFISSIONAL);
 
         User salvo = userService.criarUsuario(
                 request,
@@ -90,6 +131,7 @@ class UserServiceTest {
         request.setNome("Usuario Email");
         request.setEmail("USUARIO@TESTE.COM");
         request.setSenha("senha-secreta");
+        request.setRole(RoleType.PROFISSIONAL);
 
         User salvo = userService.criarUsuario(
                 request,

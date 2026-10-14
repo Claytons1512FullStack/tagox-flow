@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,11 +53,23 @@ class OnboardingControllerTest {
         tenantRepository.deleteAll();
         roleRepository.deleteAll();
 
-        roleRepository.save(
-                new Role(
-                        UUID.randomUUID(),
-                        RoleType.ADMIN,
-                        "Administrador"
+        roleRepository.saveAll(
+                List.of(
+                        new Role(
+                                UUID.randomUUID(),
+                                RoleType.ADMIN,
+                                "Administrador"
+                        ),
+                        new Role(
+                                UUID.randomUUID(),
+                                RoleType.PROFISSIONAL,
+                                "Profissional"
+                        ),
+                        new Role(
+                                UUID.randomUUID(),
+                                RoleType.ASSISTENTE,
+                                "Assistente"
+                        )
                 )
         );
     }
@@ -66,21 +79,21 @@ class OnboardingControllerTest {
             throws Exception {
 
         String json = """
-            {
-                "tenant": {
-                    "tipoPessoa": "JURIDICA",
-                    "documento": "11222333000181",
-                    "nome": "TAGOX Flow Tecnologia LTDA",
-                    "nomeFantasia": "TAGOX Flow",
-                    "slug": "tagox-flow-onboarding"
-                },
-                "administrador": {
-                    "nome": "Administrador TAGOX",
-                    "email": "ADMIN@TAGOX.COM.BR",
-                    "senha": "SenhaSegura123!"
+                {
+                    "tenant": {
+                        "tipoPessoa": "JURIDICA",
+                        "documento": "11222333000181",
+                        "nome": "TAGOX Flow Tecnologia LTDA",
+                        "nomeFantasia": "TAGOX Flow",
+                        "slug": "tagox-flow-onboarding"
+                    },
+                    "administrador": {
+                        "nome": "Administrador TAGOX",
+                        "email": "ADMIN@TAGOX.COM.BR",
+                        "senha": "SenhaSegura123!"
+                    }
                 }
-            }
-            """;
+                """;
 
         var resultado = mockMvc.perform(
                         post("/api/onboarding")
@@ -108,8 +121,10 @@ class OnboardingControllerTest {
         String resposta = resultado.getResponse().getContentAsString();
 
         UUID administradorId = UUID.fromString(
-                com.jayway.jsonpath.JsonPath
-                        .read(resposta, "$.administrador.id")
+                com.jayway.jsonpath.JsonPath.read(
+                        resposta,
+                        "$.administrador.id"
+                )
         );
 
         Role roleAdmin = roleRepository.findByTipo(RoleType.ADMIN)
@@ -131,21 +146,21 @@ class OnboardingControllerTest {
     void deveRejeitarEmailInvalidoSemCriarRegistros() throws Exception {
 
         String json = """
-            {
-                "tenant": {
-                    "tipoPessoa": "JURIDICA",
-                    "documento": "11222333000181",
-                    "nome": "TAGOX Flow Tecnologia LTDA",
-                    "nomeFantasia": "TAGOX Flow",
-                    "slug": "tagox-flow-email-invalido"
-                },
-                "administrador": {
-                    "nome": "Administrador TAGOX",
-                    "email": "email-invalido",
-                    "senha": "SenhaSegura123!"
+                {
+                    "tenant": {
+                        "tipoPessoa": "JURIDICA",
+                        "documento": "11222333000181",
+                        "nome": "TAGOX Flow Tecnologia LTDA",
+                        "nomeFantasia": "TAGOX Flow",
+                        "slug": "tagox-flow-email-invalido"
+                    },
+                    "administrador": {
+                        "nome": "Administrador TAGOX",
+                        "email": "email-invalido",
+                        "senha": "SenhaSegura123!"
+                    }
                 }
-            }
-            """;
+                """;
 
         mockMvc.perform(
                         post("/api/onboarding")
@@ -160,26 +175,27 @@ class OnboardingControllerTest {
     }
 
     @Test
-    void deveReverterCadastroQuandoRoleAdminNaoExiste() throws Exception {
+    void deveReverterCadastroQuandoRoleAdminNaoExiste()
+            throws Exception {
 
         roleRepository.deleteAll();
 
         String json = """
-            {
-                "tenant": {
-                    "tipoPessoa": "JURIDICA",
-                    "documento": "11222333000181",
-                    "nome": "TAGOX Flow Tecnologia LTDA",
-                    "nomeFantasia": "TAGOX Flow",
-                    "slug": "tagox-flow-rollback"
-                },
-                "administrador": {
-                    "nome": "Administrador TAGOX",
-                    "email": "admin@tagox.com.br",
-                    "senha": "SenhaSegura123!"
+                {
+                    "tenant": {
+                        "tipoPessoa": "JURIDICA",
+                        "documento": "11222333000181",
+                        "nome": "TAGOX Flow Tecnologia LTDA",
+                        "nomeFantasia": "TAGOX Flow",
+                        "slug": "tagox-flow-rollback"
+                    },
+                    "administrador": {
+                        "nome": "Administrador TAGOX",
+                        "email": "admin@tagox.com.br",
+                        "senha": "SenhaSegura123!"
+                    }
                 }
-            }
-            """;
+                """;
 
         mockMvc.perform(
                         post("/api/onboarding")
@@ -192,5 +208,4 @@ class OnboardingControllerTest {
         assertThat(userRepository.count()).isZero();
         assertThat(userRoleRepository.count()).isZero();
     }
-
 }
