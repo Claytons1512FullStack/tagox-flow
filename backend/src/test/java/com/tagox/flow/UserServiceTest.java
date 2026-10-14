@@ -11,6 +11,7 @@ import com.tagox.flow.domain.user.User;
 import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.userrole.UserRoleRepository;
 import com.tagox.flow.dto.user.CreateUserRequest;
+import com.tagox.flow.exception.ResourceNotFoundException;
 import com.tagox.flow.service.UserService;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -140,5 +142,91 @@ class UserServiceTest {
 
         assertThat(salvo.getEmail())
                 .isEqualTo("usuario@teste.com");
+    }
+
+    @Test
+    void deveAssociarRoleProfissionalAoUsuarioCriado() {
+
+        CreateUserRequest request = new CreateUserRequest();
+
+        request.setNome("Profissional Teste");
+        request.setEmail("profissional@teste.com");
+        request.setSenha("senha-secreta");
+        request.setRole(RoleType.PROFISSIONAL);
+
+        User salvo = userService.criarUsuario(
+                request,
+                tenant.getId()
+        );
+
+        List<RoleType> rolesAssociadas =
+                userRoleRepository.findRoleTypesByUsuarioId(
+                        salvo.getId()
+                );
+
+        assertThat(rolesAssociadas)
+                .containsExactly(RoleType.PROFISSIONAL);
+    }
+
+    @Test
+    void deveAssociarRoleAssistenteAoUsuarioCriado() {
+
+        CreateUserRequest request = new CreateUserRequest();
+
+        request.setNome("Assistente Teste");
+        request.setEmail("assistente@teste.com");
+        request.setSenha("senha-secreta");
+        request.setRole(RoleType.ASSISTENTE);
+
+        User salvo = userService.criarUsuario(
+                request,
+                tenant.getId()
+        );
+
+        List<RoleType> rolesAssociadas =
+                userRoleRepository.findRoleTypesByUsuarioId(
+                        salvo.getId()
+                );
+
+        assertThat(rolesAssociadas)
+                .containsExactly(RoleType.ASSISTENTE);
+    }
+
+    @Test
+    void deveReverterCadastroQuandoRoleNaoExiste() {
+
+        Role roleProfissional = roleRepository
+                .findByTipo(RoleType.PROFISSIONAL)
+                .orElseThrow();
+
+        roleRepository.delete(roleProfissional);
+        roleRepository.flush();
+
+        try {
+            CreateUserRequest request = new CreateUserRequest();
+
+            request.setNome("Profissional Sem Role");
+            request.setEmail("sem-role@teste.com");
+            request.setSenha("senha-secreta");
+            request.setRole(RoleType.PROFISSIONAL);
+
+            assertThatThrownBy(() ->
+                    userService.criarUsuario(
+                            request,
+                            tenant.getId()
+                    )
+            ).isInstanceOf(ResourceNotFoundException.class)
+                    .hasMessage("Role não encontrada");
+
+            assertThat(
+                    userRepository.existsByTenantIdAndEmail(
+                            tenant.getId(),
+                            "sem-role@teste.com"
+                    )
+            ).isFalse();
+
+        } finally {
+            roleRepository.saveAndFlush(roleProfissional);
+        }
     }
 }

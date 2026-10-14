@@ -88,4 +88,28 @@ class UserControllerValidationTest {
                         )
         );
     }
+
+    @Test
+    void deveRejeitarUsuarioSemRole() {
+
+        CreateUserRequest request = new CreateUserRequest();
+
+        request.setNome("João");
+        request.setEmail("joao@email.com");
+        request.setSenha("senha-secreta");
+
+        Set<ConstraintViolation<CreateUserRequest>> violations =
+                validator.validate(request);
+
+        assertFalse(violations.isEmpty());
+
+        assertTrue(
+                violations.stream()
+                        .anyMatch(
+                                v -> v.getPropertyPath()
+                                        .toString()
+                                        .equals("role")
+                        )
+        );
+    }
 }
