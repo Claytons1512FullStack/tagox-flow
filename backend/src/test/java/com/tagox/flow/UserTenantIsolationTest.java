@@ -13,20 +13,20 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public class UserTenantIsolationTest {
-
+class UserTenantIsolationTest {
 
     @Autowired
     private UserRepository userRepository;
-
 
     @Autowired
     private TenantRepository tenantRepository;
@@ -40,7 +40,6 @@ public class UserTenantIsolationTest {
     @Test
     void devePermitirMesmoEmailEmTenantsDiferentes() {
 
-
         Tenant tenantA = new Tenant(
                 UUID.randomUUID(),
                 TipoPessoa.JURIDICA,
@@ -50,7 +49,6 @@ public class UserTenantIsolationTest {
                 "empresa-a",
                 TenantStatus.ATIVO
         );
-
 
         Tenant tenantB = new Tenant(
                 UUID.randomUUID(),
@@ -62,11 +60,8 @@ public class UserTenantIsolationTest {
                 TenantStatus.ATIVO
         );
 
-
         tenantRepository.save(tenantA);
         tenantRepository.save(tenantB);
-
-
 
         User userA = new User(
                 UUID.randomUUID(),
@@ -77,7 +72,6 @@ public class UserTenantIsolationTest {
                 UserStatus.ATIVO
         );
 
-
         User userB = new User(
                 UUID.randomUUID(),
                 tenantB,
@@ -87,11 +81,8 @@ public class UserTenantIsolationTest {
                 UserStatus.ATIVO
         );
 
-
-        userRepository.save(userA);
-        userRepository.save(userB);
-
-
+        userRepository.saveAndFlush(userA);
+        userRepository.saveAndFlush(userB);
 
         boolean existeTenantA =
                 userRepository.existsByTenantIdAndEmail(
@@ -99,34 +90,24 @@ public class UserTenantIsolationTest {
                         "usuario@email.com"
                 );
 
-
         boolean existeTenantB =
                 userRepository.existsByTenantIdAndEmail(
                         tenantB.getId(),
                         "usuario@email.com"
                 );
 
-
-
         assertThat(existeTenantA).isTrue();
-
         assertThat(existeTenantB).isTrue();
-
 
         assertThat(userA.getTenant().getId())
                 .isEqualTo(tenantA.getId());
 
-
         assertThat(userB.getTenant().getId())
                 .isEqualTo(tenantB.getId());
-
     }
-
-
 
     @Test
     void deveBloquearEmailDuplicadoDentroDoMesmoTenant() {
-
 
         Tenant tenant = new Tenant(
                 UUID.randomUUID(),
@@ -138,10 +119,7 @@ public class UserTenantIsolationTest {
                 TenantStatus.ATIVO
         );
 
-
         tenantRepository.save(tenant);
-
-
 
         User primeiroUsuario = new User(
                 UUID.randomUUID(),
@@ -152,20 +130,26 @@ public class UserTenantIsolationTest {
                 UserStatus.ATIVO
         );
 
+        userRepository.saveAndFlush(primeiroUsuario);
 
-        userRepository.save(primeiroUsuario);
+        User segundoUsuario = new User(
+                UUID.randomUUID(),
+                tenant,
+                "Segundo Usuario",
+                "duplicado@email.com",
+                "hash456",
+                UserStatus.ATIVO
+        );
 
+        assertThatThrownBy(
+                () -> userRepository.saveAndFlush(segundoUsuario)
+        ).isInstanceOf(DataIntegrityViolationException.class);
 
-
-        boolean existe =
+        assertThat(
                 userRepository.existsByTenantIdAndEmail(
                         tenant.getId(),
                         "duplicado@email.com"
-                );
-
-
-        assertThat(existe).isTrue();
-
+                )
+        ).isTrue();
     }
-
 }
