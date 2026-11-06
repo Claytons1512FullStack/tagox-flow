@@ -229,4 +229,90 @@ class UserServiceTest {
             roleRepository.saveAndFlush(roleProfissional);
         }
     }
+
+    @Test
+    void deveListarSomenteProfissionaisDoTenantInformado() {
+
+        CreateUserRequest profissionalRequest = new CreateUserRequest();
+        profissionalRequest.setNome("Ana Profissional");
+        profissionalRequest.setEmail("ana@teste.com");
+        profissionalRequest.setSenha("senha-secreta");
+        profissionalRequest.setRole(RoleType.PROFISSIONAL);
+
+        userService.criarUsuario(profissionalRequest, tenant.getId());
+
+        CreateUserRequest assistenteRequest = new CreateUserRequest();
+        assistenteRequest.setNome("Bruno Assistente");
+        assistenteRequest.setEmail("bruno@teste.com");
+        assistenteRequest.setSenha("senha-secreta");
+        assistenteRequest.setRole(RoleType.ASSISTENTE);
+
+        userService.criarUsuario(assistenteRequest, tenant.getId());
+
+        List<User> profissionais =
+                userService.listarProfissionais(tenant.getId());
+
+        assertThat(profissionais)
+                .hasSize(1)
+                .extracting(User::getNome)
+                .containsExactly("Ana Profissional");
+    }
+
+    @Test
+    void deveManterIsolamentoEntreTenantsNaListagemDeProfissionais() {
+
+        Tenant segundoTenant = new Tenant(
+                UUID.randomUUID(),
+                TipoPessoa.JURIDICA,
+                "55555555000155",
+                "Segunda Empresa Service Teste",
+                "Segunda Empresa Service Teste",
+                "segunda-empresa-service-teste",
+                TenantStatus.TRIAL
+        );
+
+        tenantRepository.save(segundoTenant);
+
+        CreateUserRequest profissionalPrimeiroTenant =
+                new CreateUserRequest();
+
+        profissionalPrimeiroTenant.setNome("Ana Primeiro Tenant");
+        profissionalPrimeiroTenant.setEmail("ana.primeiro@teste.com");
+        profissionalPrimeiroTenant.setSenha("senha-secreta");
+        profissionalPrimeiroTenant.setRole(RoleType.PROFISSIONAL);
+
+        userService.criarUsuario(
+                profissionalPrimeiroTenant,
+                tenant.getId()
+        );
+
+        CreateUserRequest profissionalSegundoTenant =
+                new CreateUserRequest();
+
+        profissionalSegundoTenant.setNome("Bruno Segundo Tenant");
+        profissionalSegundoTenant.setEmail("bruno.segundo@teste.com");
+        profissionalSegundoTenant.setSenha("senha-secreta");
+        profissionalSegundoTenant.setRole(RoleType.PROFISSIONAL);
+
+        userService.criarUsuario(
+                profissionalSegundoTenant,
+                segundoTenant.getId()
+        );
+
+        List<User> profissionaisPrimeiroTenant =
+                userService.listarProfissionais(tenant.getId());
+
+        List<User> profissionaisSegundoTenant =
+                userService.listarProfissionais(segundoTenant.getId());
+
+        assertThat(profissionaisPrimeiroTenant)
+                .hasSize(1)
+                .extracting(User::getNome)
+                .containsExactly("Ana Primeiro Tenant");
+
+        assertThat(profissionaisSegundoTenant)
+                .hasSize(1)
+                .extracting(User::getNome)
+                .containsExactly("Bruno Segundo Tenant");
+    }
 }

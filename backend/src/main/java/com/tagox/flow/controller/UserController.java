@@ -14,6 +14,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -41,5 +43,20 @@ public class UserController {
                 .body(
                         UserResponse.from(user)
                 );
+    }
+
+    @GetMapping("/profissionais")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<UserResponse>> listarProfissionais(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+
+        List<UserResponse> profissionais = userService
+                .listarProfissionais(authenticatedUser.getTenantId())
+                .stream()
+                .map(UserResponse::from)
+                .toList();
+
+        return ResponseEntity.ok(profissionais);
     }
 }

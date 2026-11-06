@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -112,6 +113,27 @@ class UserControllerTest {
         );
 
         return userRepository.save(usuario);
+    }
+
+    private void associarRole(
+            UUID usuarioId,
+            RoleType roleType
+    ) {
+
+        UUID roleId = jdbcTemplate.queryForObject(
+                "SELECT id FROM role WHERE tipo = ?",
+                UUID.class,
+                roleType.name()
+        );
+
+        jdbcTemplate.update(
+                """
+                INSERT INTO usuario_role (usuario_id, role_id)
+                VALUES (?, ?)
+                """,
+                usuarioId,
+                roleId
+        );
     }
 
     @Test
@@ -327,6 +349,133 @@ class UserControllerTest {
                 tenantB.getId(),
                 "mesmo@email.com"
         )).isTrue();
+    }
+
+    @Test
+    void adminDeveListarSomenteProfissionaisDoProprioTenant()
+            throws Exception {
+
+        UUID profissionalId = UUID.randomUUID();
+        UUID assistenteId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                profissionalId,
+                tenant,
+                "profissional@teste.com"
+        );
+
+        criarUsuarioAutenticavel(
+                assistenteId,
+                tenant,
+                "assistente@teste.com"
+        );
+
+        associarRole(profissionalId, RoleType.PROFISSIONAL);
+        associarRole(assistenteId, RoleType.ASSISTENTE);
+
+        Tenant outroTenant = new Tenant(
+                UUID.randomUUID(),
+                TipoPessoa.JURIDICA,
+                "66666666000166",
+                "Outra Empresa",
+                "Outra Empresa",
+                "outra-empresa",
+                TenantStatus.ATIVO
+        );
+
+        tenantRepository.save(outroTenant);
+
+        UUID profissionalOutroTenantId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                profissionalOutroTenantId,
+                outroTenant,
+                "profissional@outraempresa.com"
+        );
+
+        associarRole(
+                profissionalOutroTenantId,
+                RoleType.PROFISSIONAL
+        );
+
+        mockMvc.perform(
+                        get("/api/users/profissionais")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + token
+                                )
+                )
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id")
+                        .value(profissionalId.toString()))
+                .andExpect(jsonPath("$[0].nome")
+                        .value("Usuario de Teste"))
+                .andExpect(jsonPath("$[0].email")
+                        .value("profissional@teste.com"))
+                .andExpect(jsonPath("$[0].tenantId")
+                        .value(tenant.getId().toString()))
+                .andExpect(jsonPath("$[0].senhaHash").doesNotExist())
+                .andExpect(jsonPath("$[0].senha").doesNotExist());
+    }
+
+    @Test
+    void profissionalNaoPodeListarProfissionais() throws Exception {
+
+        UUID profissionalId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                profissionalId,
+                tenant,
+                "profissional@teste.com"
+        );
+
+        String profissionalToken = jwtService.gerarToken(
+                profissionalId,
+                tenant.getId()
+        );
+
+        when(userRoleRepository.findRoleTypesByUsuarioId(profissionalId))
+                .thenReturn(List.of(RoleType.PROFISSIONAL));
+
+        mockMvc.perform(
+                        get("/api/users/profissionais")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + profissionalToken
+                                )
+                )
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void assistenteNaoPodeListarProfissionais() throws Exception {
+
+        UUID assistenteId = UUID.randomUUID();
+
+        criarUsuarioAutenticavel(
+                assistenteId,
+                tenant,
+                "assistente@teste.com"
+        );
+
+        String assistenteToken = jwtService.gerarToken(
+                assistenteId,
+                tenant.getId()
+        );
+
+        when(userRoleRepository.findRoleTypesByUsuarioId(assistenteId))
+                .thenReturn(List.of(RoleType.ASSISTENTE));
+
+        mockMvc.perform(
+                        get("/api/users/profissionais")
+                                .header(
+                                        "Authorization",
+                                        "Bearer " + assistenteToken
+                                )
+                )
+                .andExpect(status().isForbidden());
     }
 
     @Test
