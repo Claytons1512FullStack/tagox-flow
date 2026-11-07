@@ -1669,3 +1669,707 @@ button.module-card:hover .module-action > span {
     flex-direction: column;
   }
 }
+/* TAGOX FLOW — painel premium claro */
+
+.app-shell {
+  --color-background: #f4f7fb;
+  --color-surface: #ffffff;
+  --color-primary: #1683ff;
+  --color-cyan: #22d3ee;
+  --color-text: #07111f;
+  --color-muted: #64748b;
+  --color-border: #e2e8f0;
+
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.app-topbar {
+  background: #ffffff;
+  border-bottom-color: #e2e8f0;
+}
+
+.app-topbar h1 {
+  color: #07111f;
+}
+
+.topbar-eyebrow {
+  color: #64748b;
+}
+
+.account-indicator strong {
+  color: #0d1b2e;
+}
+
+.account-indicator > div > span {
+  color: #64748b;
+}
+
+.account-avatar {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #1683ff;
+}
+
+.dashboard-welcome {
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: linear-gradient(120deg, #ffffff, #eff6ff);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.04);
+}
+
+.dashboard-welcome h2 {
+  color: #07111f;
+}
+
+.dashboard-welcome p {
+  color: #526277;
+}
+/* TAGOX FLOW — navegação Premium Claro */
+
+.app-shell .app-sidebar {
+  border-right-color: #e2e8f0;
+  background: #ffffff;
+}
+
+.app-shell .sidebar-section-label {
+  color: #94a3b8;
+}
+
+.app-shell .nav-item {
+  color: #526277;
+}
+
+.app-shell .nav-item:hover {
+  background: #f1f6fd;
+  color: #0d1b2e;
+}
+
+.app-shell .nav-item.active {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #145db5;
+}
+
+.app-shell .nav-item.active .nav-icon {
+  color: #1683ff;
+}
+
+.app-shell .nav-icon {
+  color: #8494a8;
+}
+
+.app-shell .sidebar-status {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.app-shell .logout-button {
+  color: #64748b;
+}
+
+.app-shell .logout-button:hover {
+  background: #fff1f2;
+  color: #e11d48;
+}
+
+.app-shell .nav-item:focus-visible,
+.app-shell .logout-button:focus-visible {
+  outline-color: #1683ff;
+}
+
+
+/* TAGOX FLOW — pacientes Premium Claro */
+
+.app-shell .patients-panel {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.045);
+}
+
+.app-shell .patients-toolbar h2 {
+  color: #07111f;
+}
+
+.app-shell .patients-toolbar p {
+  color: #64748b;
+}
+
+
+.app-shell .patients-secondary-button {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #526277;
+}
+
+.app-shell .patients-secondary-button:hover:not(:disabled) {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #145db5;
+}
+
+.app-shell .patients-search label,
+.app-shell .patient-field label {
+  color: #526277;
+}
+
+.app-shell .patients-search-input {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.app-shell .patients-search-input input {
+  color: #07111f;
+}
+
+.app-shell .patients-search-input input::placeholder {
+  color: #94a3b8;
+}
+
+
+.app-shell .patient-form {
+  border-color: #dbeafe;
+  background: #f8fafc;
+}
+
+.app-shell .patient-form-heading h3 {
+  color: #07111f;
+}
+
+.app-shell .patients-close-button {
+  border-color: #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.app-shell .patients-close-button:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.app-shell .patient-field input {
+  border-color: #cbd5e1;
+  background: #ffffff;
+  color: #07111f;
+}
+
+.app-shell .patient-field input::placeholder {
+  color: #94a3b8;
+}
+
+.app-shell .patient-field input:disabled {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.app-shell .patient-form-note {
+  color: #64748b;
+}
+
+
+.app-shell .patients-table-wrapper {
+  border-color: #e2e8f0;
+  background: #ffffff;
+}
+
+.app-shell .patients-table th {
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.app-shell .patients-table td {
+  border-top-color: #e2e8f0;
+  color: #526277;
+}
+
+.app-shell .patients-table tbody tr:hover {
+  background: #f8fbff;
+}
+
+.app-shell .patient-name-cell strong {
+  color: #07111f;
+}
+
+.app-shell .patient-avatar {
+  border-color: #dbeafe;
+  background: #eff6ff;
+  color: #1683ff;
+}
+
+.app-shell .patient-edit-button {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #145db5;
+}
+
+.app-shell .patient-edit-button:hover {
+  background: #dbeafe;
+}
+
+
+.app-shell .patients-table-footer {
+  color: #64748b;
+}
+
+.app-shell .patients-empty-state h3 {
+  color: #07111f;
+}
+
+.app-shell .patients-empty-state p {
+  color: #64748b;
+}
+
+.app-shell .patients-empty-icon {
+  color: #1683ff;
+}
+
+.app-shell .patients-loading-spinner {
+  border-color: #dbeafe;
+  border-top-color: #1683ff;
+}
+
+.app-shell .patients-alert-error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.app-shell .patients-alert-success {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.app-shell .patients-alert button {
+  border-color: currentColor;
+}
+
+.app-shell .patients-primary-button:focus-visible,
+.app-shell .patients-secondary-button:focus-visible,
+.app-shell .patients-close-button:focus-visible,
+.app-shell .patient-edit-button:focus-visible {
+  outline: 2px solid #1683ff;
+  outline-offset: 3px;
+}
+
+
+/* TAGOX FLOW — identidade visual híbrida */
+
+.app-shell .app-sidebar {
+  border-right-color: rgba(145, 161, 181, 0.15);
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(22, 131, 255, 0.13), transparent 42%),
+    linear-gradient(180deg, #07111f 0%, #0d1b2e 100%);
+}
+
+.app-shell .sidebar-section-label {
+  color: #7188a2;
+}
+
+.app-shell .nav-item {
+  color: #91a1b5;
+}
+
+.app-shell .nav-item:hover {
+  background: rgba(22, 131, 255, 0.10);
+  color: #f4f7fb;
+}
+
+.app-shell .nav-item.active {
+  border-color: rgba(22, 131, 255, 0.28);
+  background: linear-gradient(110deg, rgba(22, 131, 255, 0.22), rgba(34, 211, 238, 0.08));
+  color: #ffffff;
+}
+
+.app-shell .nav-item.active .nav-icon {
+  color: #22d3ee;
+}
+
+.app-shell .nav-icon {
+  color: #7188a2;
+}
+
+.app-shell .sidebar-status {
+  border-color: rgba(145, 161, 181, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #91a1b5;
+}
+
+.app-shell .logout-button {
+  color: #91a1b5;
+}
+
+.app-shell .logout-button:hover {
+  background: rgba(225, 29, 72, 0.10);
+  color: #fda4af;
+}
+
+
+/* TAGOX FLOW — dashboard com identidade da marca */
+
+.app-shell .app-main {
+  background: #f4f7fb;
+}
+
+.app-shell .app-topbar {
+  border-bottom-color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.app-shell .app-topbar h1 {
+  color: #07111f;
+}
+
+.app-shell .topbar-eyebrow {
+  color: #64748b;
+}
+
+.app-shell .dashboard-content {
+  background: #f4f7fb;
+}
+
+.app-shell .dashboard-welcome {
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  background:
+    radial-gradient(ellipse at 90% 10%, rgba(22, 131, 255, 0.28), transparent 38%),
+    linear-gradient(115deg, #07111f 0%, #0d1b2e 68%, #102b49 100%);
+  box-shadow: 0 14px 35px rgba(7, 17, 31, 0.14);
+}
+
+.app-shell .dashboard-welcome h2 {
+  color: #f4f7fb;
+}
+
+.app-shell .dashboard-welcome p {
+  color: #b7c8dc;
+}
+
+.app-shell .section-heading h2 {
+  color: #07111f;
+}
+
+
+/* TAGOX FLOW — cards do dashboard */
+
+.app-shell .module-count {
+  border-color: #dbeafe;
+  background: #ffffff;
+  color: #145db5;
+}
+
+.app-shell .module-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #dce6f2;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #ffffff 0%, #fafdff 100%);
+  box-shadow: 0 5px 18px rgba(7, 17, 31, 0.045);
+  color: #07111f;
+}
+
+.app-shell button.module-card:hover {
+  border-color: #93c5fd;
+  background: #ffffff;
+  box-shadow: 0 13px 28px rgba(22, 131, 255, 0.10);
+  transform: translateY(-3px);
+}
+
+.app-shell .module-icon {
+  border-color: #bfdbfe;
+  background: linear-gradient(145deg, #eff6ff, #e0f2fe);
+  color: #1683ff;
+}
+
+.app-shell .overview-icon {
+  border-color: #bfdbfe;
+  color: #1683ff;
+}
+
+.app-shell .module-title {
+  color: #07111f;
+}
+
+.app-shell .module-description {
+  color: #64748b;
+}
+
+.app-shell .module-action {
+  color: #1269dc;
+}
+
+
+/* TAGOX FLOW — acabamento do dashboard */
+
+.app-shell .module-card-muted {
+  border-color: #e2e8f0;
+  background: #f8fafc;
+}
+
+.app-shell .module-action-muted {
+  color: #94a3b8;
+}
+
+.app-shell .dashboard-notice {
+  border-color: #bfdbfe;
+  background: linear-gradient(110deg, #eff6ff, #f0f9ff);
+}
+
+.app-shell .notice-icon {
+  border-color: #bfdbfe;
+  background: #ffffff;
+  color: #1683ff;
+}
+
+.app-shell .dashboard-notice p {
+  color: #526277;
+}
+
+.app-shell .app-footer {
+  border-top-color: #e2e8f0;
+  color: #8494a8;
+}
+
+.app-shell .module-card:focus-visible {
+  outline-color: #1683ff;
+}
+
+
+/* TAGOX FLOW — refinamento de tipografia */
+
+.app-shell .dashboard-welcome h2 {
+  font-size: clamp(30px, 3.2vw, 38px);
+  letter-spacing: -1.1px;
+}
+
+.app-shell .dashboard-welcome p {
+  color: #c3d8f2;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.app-shell .section-heading h2 {
+  font-size: 21px;
+  letter-spacing: -0.5px;
+}
+
+.app-shell .module-count {
+  font-size: 12px;
+}
+
+.app-shell .module-title {
+  font-size: 17px;
+  font-weight: 750;
+}
+
+.app-shell .module-description {
+  color: #1269dc;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.app-shell .module-action {
+  color: #1683ff;
+  font-size: 13px;
+}
+
+/* TAGOX FLOW — pacientes: cabecalho e busca */
+
+.app-shell .patients-toolbar {
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.app-shell .patients-toolbar h2 {
+  font-size: 23px;
+  font-weight: 750;
+  letter-spacing: -0.55px;
+}
+
+.app-shell .patients-toolbar p {
+  margin-top: 5px;
+  color: #1269dc;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.app-shell .patients-primary-button,
+.app-shell .patients-secondary-button {
+  min-height: 46px;
+  padding: 12px 19px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.app-shell .patients-primary-button {
+  background: linear-gradient(110deg, #1683ff, #1269dc);
+  box-shadow: 0 5px 14px rgba(22, 131, 255, 0.18);
+}
+
+.app-shell .patients-search {
+  max-width: 520px;
+  margin-bottom: 28px;
+}
+
+.app-shell .patients-search label,
+.app-shell .patient-field label {
+  color: #1269dc;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.app-shell .patients-search-input {
+  min-height: 49px;
+  padding: 0 15px;
+  border-radius: 10px;
+  background: #fafdff;
+}
+
+.app-shell .patients-search-input > span {
+  color: #1683ff;
+}
+
+.app-shell .patients-search-input input {
+  font-size: 14px;
+}
+
+/* TAGOX FLOW — pacientes: formulario */
+
+.app-shell .patient-form {
+  padding: 27px;
+  border-color: #bfdbfe;
+  border-radius: 15px;
+  background: linear-gradient(145deg, #ffffff, #f8fbff);
+  box-shadow: 0 6px 20px rgba(7, 17, 31, 0.035);
+}
+
+.app-shell .patient-form-heading {
+  margin-bottom: 27px;
+}
+
+.app-shell .patient-form-heading h3 {
+  font-size: 21px;
+  font-weight: 750;
+  letter-spacing: -0.4px;
+}
+
+.app-shell .patient-field input {
+  min-height: 47px;
+  padding: 11px 14px;
+  border-radius: 9px;
+  font-size: 14px;
+}
+
+.app-shell .patient-form-note {
+  color: #1269dc;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.app-shell .patient-form-actions {
+  gap: 13px;
+}
+
+/* TAGOX FLOW — pacientes: tabela */
+
+.app-shell .patients-table-wrapper {
+  border-radius: 13px;
+  box-shadow: 0 4px 15px rgba(7, 17, 31, 0.025);
+}
+
+.app-shell .patients-table {
+  font-size: 14px;
+}
+
+.app-shell .patients-table th {
+  padding: 17px 18px;
+  color: #1269dc;
+  font-size: 11px;
+  letter-spacing: 0.065em;
+}
+
+.app-shell .patients-table td {
+  padding: 17px 18px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.app-shell .patient-name-cell {
+  gap: 13px;
+}
+
+.app-shell .patient-name-cell strong {
+  color: #07111f;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.app-shell .patient-avatar {
+  flex-basis: 39px;
+  width: 39px;
+  height: 39px;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #eff6ff, #e0f2fe);
+  color: #1683ff;
+  font-size: 14px;
+}
+
+.app-shell .patient-edit-button {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #1269dc;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.app-shell .patients-table-footer {
+  padding-top: 19px;
+  color: #1269dc;
+  font-size: 12px;
+}
+
+/* TAGOX FLOW — pacientes: acabamento */
+
+.app-shell .patients-empty-state h3 {
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.app-shell .patients-empty-state p {
+  color: #1269dc;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.app-shell .patients-empty-icon {
+  font-size: 39px;
+}
+
+.app-shell .patients-alert-error,
+.app-shell .patients-alert-success {
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+@media (max-width: 640px) {
+  .app-shell .patients-panel {
+    padding: 19px;
+  }
+
+  .app-shell .patients-toolbar h2 {
+    font-size: 21px;
+  }
+
+  .app-shell .patient-form {
+    padding: 19px;
+  }
+
+  .app-shell .patients-table th,
+  .app-shell .patients-table td {
+    padding: 14px;
+  }
+}
+
