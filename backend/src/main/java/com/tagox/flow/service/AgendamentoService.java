@@ -14,12 +14,14 @@ import com.tagox.flow.domain.user.UserRepository;
 import com.tagox.flow.domain.user.UserStatus;
 import com.tagox.flow.domain.userrole.UserRoleRepository;
 import com.tagox.flow.exception.BusinessException;
+import com.tagox.flow.exception.ConflitoAgendamentoException;
 import com.tagox.flow.exception.ResourceNotFoundException;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -32,6 +34,8 @@ import java.util.UUID;
 public class AgendamentoService {
 
     private static final long DURACAO_CONSULTA_MINUTOS = 50;
+
+    private static final String SQLSTATE_EXCLUSAO_VIOLADA = "23P01";
 
     private static final ZoneId FUSO_CLINICA =
             ZoneId.of("America/Sao_Paulo");
@@ -82,7 +86,12 @@ public class AgendamentoService {
                         )
                 );
 
-        User profissional = buscarProfissionalAtivo(
+        /*
+         * Bloqueia o registro do profissional durante a transação.
+         * As demais criações que utilizarem o mesmo mecanismo
+         * precisarão aguardar a liberação desse bloqueio.
+         */
+        User profissional = buscarProfissionalAtivoParaAgendamento(
                 profissionalId,
                 tenantId
         );
@@ -99,6 +108,9 @@ public class AgendamentoService {
                 DURACAO_CONSULTA_MINUTOS * 60
         );
 
+        int intervaloEntreConsultas =
+                tenant.getIntervaloEntreConsultasMinutos();
+
         validarDisponibilidade(
                 tenantId,
                 profissionalId,
@@ -110,7 +122,8 @@ public class AgendamentoService {
                 tenantId,
                 profissionalId,
                 inicio,
-                fim
+                fim,
+                intervaloEntreConsultas
         );
 
         Agendamento agendamento = new Agendamento(
@@ -125,10 +138,15 @@ public class AgendamentoService {
         try {
             return agendamentoRepository.saveAndFlush(agendamento);
         } catch (DataIntegrityViolationException exception) {
-            throw new BusinessException(
-                    "Não foi possível realizar o agendamento. "
-                            + "O horário pode ter sido reservado por outra solicitação."
-            );
+            if (ehConflitoDeHorario(exception)) {
+                throw new ConflitoAgendamentoException(
+                        "Este horário acabou de ser reservado. "
+                                + "Consulte a disponibilidade e escolha "
+                                + "outro horário."
+                );
+            }
+
+            throw exception;
         }
     }
 
@@ -220,6 +238,23 @@ public class AgendamentoService {
         return agendamentoRepository.save(agendamento);
     }
 
+    private User buscarProfissionalAtivoParaAgendamento(
+            UUID profissionalId,
+            UUID tenantId
+    ) {
+        User profissional = userRepository
+                .findByIdAndTenantIdForUpdate(profissionalId, tenantId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Profissional não encontrado nesta clínica."
+                        )
+                );
+
+        validarProfissionalAtivo(profissional, profissionalId);
+
+        return profissional;
+    }
+
     private User buscarProfissionalAtivo(
             UUID profissionalId,
             UUID tenantId
@@ -232,6 +267,15 @@ public class AgendamentoService {
                         )
                 );
 
+        validarProfissionalAtivo(profissional, profissionalId);
+
+        return profissional;
+    }
+
+    private void validarProfissionalAtivo(
+            User profissional,
+            UUID profissionalId
+    ) {
         if (profissional.getStatus() != UserStatus.ATIVO) {
             throw new BusinessException(
                     "O profissional não está ativo."
@@ -246,8 +290,6 @@ public class AgendamentoService {
                     "O usuário informado não possui o papel de profissional."
             );
         }
-
-        return profissional;
     }
 
     private void validarInicio(Instant inicio) {
@@ -277,10 +319,6 @@ public class AgendamentoService {
         LocalTime horaInicio = inicioLocal.toLocalTime();
         LocalTime horaFim = fimLocal.toLocalTime();
 
-        /*
-         * Nesta primeira versão, uma consulta deve terminar
-         * no mesmo dia em que começa.
-         */
         if (!inicioLocal.toLocalDate().equals(fimLocal.toLocalDate())) {
             throw new BusinessException(
                     "A consulta deve terminar no mesmo dia em que começa."
@@ -312,23 +350,65 @@ public class AgendamentoService {
             UUID tenantId,
             UUID profissionalId,
             Instant inicio,
-            Instant fim
+            Instant fim,
+            int intervaloEntreConsultasMinutos
     ) {
+        if (intervaloEntreConsultasMinutos < 0) {
+            throw new BusinessException(
+                    "O intervalo entre consultas da clínica é inválido."
+            );
+        }
+
+        long intervaloEmSegundos =
+                intervaloEntreConsultasMinutos * 60L;
+
+        /*
+         * Expandimos a janela de pesquisa nos dois sentidos.
+         *
+         * Isso identifica:
+         * - consultas que terminam muito próximas do novo início;
+         * - consultas que começam muito próximas do novo fim;
+         * - sobreposições propriamente ditas.
+         *
+         * Os limites são exclusivos: quando a distância é exatamente
+         * igual ao intervalo configurado, o horário é permitido.
+         */
+        Instant limiteInicio = inicio.minusSeconds(intervaloEmSegundos);
+        Instant limiteFim = fim.plusSeconds(intervaloEmSegundos);
+
         boolean existeConflito =
                 agendamentoRepository
                         .existsByTenant_IdAndProfissional_IdAndInicioLessThanAndFimGreaterThanAndStatusIn(
                                 tenantId,
                                 profissionalId,
-                                fim,
-                                inicio,
+                                limiteFim,
+                                limiteInicio,
                                 STATUS_BLOQUEANTES
                         );
 
         if (existeConflito) {
-            throw new BusinessException(
-                    "Já existe um agendamento nesse intervalo."
+            throw new ConflitoAgendamentoException(
+                    "Já existe um agendamento nesse intervalo. "
+                            + "Consulte a disponibilidade e escolha outro horário."
             );
         }
+    }
+
+    private boolean ehConflitoDeHorario(Throwable exception) {
+        Throwable causa = exception;
+
+        while (causa != null) {
+            if (causa instanceof SQLException sqlException
+                    && SQLSTATE_EXCLUSAO_VIOLADA.equals(
+                    sqlException.getSQLState()
+            )) {
+                return true;
+            }
+
+            causa = causa.getCause();
+        }
+
+        return false;
     }
 
     private Agendamento buscarAgendamento(

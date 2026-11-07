@@ -2,7 +2,6 @@ package com.tagox.flow.domain.tenant;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
@@ -40,12 +39,14 @@ public class Tenant {
     @Column(nullable = false)
     private TenantStatus status;
 
+    @Column(name = "intervalo_entre_consultas_minutos", nullable = false)
+    private int intervaloEntreConsultasMinutos = 10;
+
     @Column(name = "criado_em", nullable = false, updatable = false)
     private Instant criadoEm;
 
     @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
-
 
     protected Tenant() {
         // Construtor protegido exigido pelo Hibernate
@@ -67,8 +68,6 @@ public class Tenant {
         this.status = status;
     }
 
-
-
     public Tenant(
             UUID id,
             TipoPessoa tipoPessoa,
@@ -86,7 +85,6 @@ public class Tenant {
         this.slug = slug;
         this.status = status;
     }
-
 
     public Tenant(
             UUID id,
@@ -110,7 +108,6 @@ public class Tenant {
         this.atualizadoEm = atualizadoEm;
     }
 
-
     @PrePersist
     private void antesDePersistir() {
 
@@ -129,14 +126,20 @@ public class Tenant {
         }
     }
 
-
     @PreUpdate
     private void antesDeAtualizar() {
-
         this.atualizadoEm = Instant.now();
-
     }
 
+    public void atualizarIntervaloEntreConsultasMinutos(int intervalo) {
+        if (intervalo < 0) {
+            throw new IllegalArgumentException(
+                    "O intervalo entre consultas não pode ser negativo."
+            );
+        }
+
+        this.intervaloEntreConsultasMinutos = intervalo;
+    }
 
     public UUID getId() {
         return id;
@@ -164,6 +167,10 @@ public class Tenant {
 
     public TenantStatus getStatus() {
         return status;
+    }
+
+    public int getIntervaloEntreConsultasMinutos() {
+        return intervaloEntreConsultasMinutos;
     }
 
     public Instant getCriadoEm() {

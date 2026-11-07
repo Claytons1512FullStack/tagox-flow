@@ -36,4 +36,13 @@ public interface AgendamentoRepository
             Instant inicio,
             List<Agendamento.Status> status
     );
+
+    List<Agendamento>
+    findAllByTenant_IdAndProfissional_IdAndInicioLessThanAndFimGreaterThanAndStatusInOrderByInicioAsc(
+            UUID tenantId,
+            UUID profissionalId,
+            Instant fim,
+            Instant inicio,
+            List<Agendamento.Status> status
+    );
 }

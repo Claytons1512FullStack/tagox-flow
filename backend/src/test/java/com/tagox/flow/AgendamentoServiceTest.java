@@ -14,6 +14,7 @@ import com.tagox.flow.domain.tenant.TipoPessoa;
 import com.tagox.flow.domain.user.User;
 import com.tagox.flow.dto.user.CreateUserRequest;
 import com.tagox.flow.exception.BusinessException;
+import com.tagox.flow.exception.ConflitoAgendamentoException;
 import com.tagox.flow.exception.ResourceNotFoundException;
 import com.tagox.flow.service.AgendaProfissionalService;
 import com.tagox.flow.service.AgendamentoService;
@@ -50,6 +51,16 @@ class AgendamentoServiceTest {
 
     private static final LocalTime HORARIO_FIM =
             LocalTime.of(12, 0);
+
+    private static final long DURACAO_CONSULTA_SEGUNDOS =
+            50 * 60L;
+
+    private static final long INTERVALO_PADRAO_SEGUNDOS =
+            10 * 60L;
+
+    private static final long PASSO_PADRAO_SEGUNDOS =
+            DURACAO_CONSULTA_SEGUNDOS
+                    + INTERVALO_PADRAO_SEGUNDOS;
 
     @Autowired
     private AgendamentoService agendamentoService;
@@ -125,7 +136,9 @@ class AgendamentoServiceTest {
 
         assertThat(agendamento.getFim())
                 .isEqualTo(
-                        inicioConsulta.plusSeconds(50 * 60)
+                        inicioConsulta.plusSeconds(
+                                DURACAO_CONSULTA_SEGUNDOS
+                        )
                 );
 
         assertThat(agendamento.getStatus())
@@ -167,7 +180,7 @@ class AgendamentoServiceTest {
         );
 
         Instant horarioSobreposto =
-                inicioConsulta.plusSeconds(30 * 60);
+                inicioConsulta.plusSeconds(30 * 60L);
 
         assertThatThrownBy(() ->
                 agendamentoService.criarAgendamento(
@@ -177,11 +190,11 @@ class AgendamentoServiceTest {
                         horarioSobreposto,
                         null
                 )
-        ).isInstanceOf(BusinessException.class);
+        ).isInstanceOf(ConflitoAgendamentoException.class);
     }
 
     @Test
-    void devePermitirConsultasConsecutivas() {
+    void devePermitirConsultasConsecutivasRespeitandoIntervaloPadrao() {
         agendamentoService.criarAgendamento(
                 tenant.getId(),
                 profissional.getId(),
@@ -191,7 +204,136 @@ class AgendamentoServiceTest {
         );
 
         Instant proximaConsulta =
-                inicioConsulta.plusSeconds(50 * 60);
+                inicioConsulta.plusSeconds(
+                        PASSO_PADRAO_SEGUNDOS
+                );
+
+        Agendamento segundoAgendamento =
+                agendamentoService.criarAgendamento(
+                        tenant.getId(),
+                        profissional.getId(),
+                        paciente.getId(),
+                        proximaConsulta,
+                        null
+                );
+
+        assertThat(segundoAgendamento.getInicio())
+                .isEqualTo(proximaConsulta);
+    }
+
+    @Test
+    void naoDevePermitirConsultaSemRespeitarIntervaloAposConsultaExistente() {
+        agendamentoService.criarAgendamento(
+                tenant.getId(),
+                profissional.getId(),
+                paciente.getId(),
+                inicioConsulta,
+                null
+        );
+
+        Instant horarioInsuficiente =
+                inicioConsulta.plusSeconds(
+                        DURACAO_CONSULTA_SEGUNDOS + 5 * 60L
+                );
+
+        assertThatThrownBy(() ->
+                agendamentoService.criarAgendamento(
+                        tenant.getId(),
+                        profissional.getId(),
+                        paciente.getId(),
+                        horarioInsuficiente,
+                        null
+                )
+        ).isInstanceOf(ConflitoAgendamentoException.class);
+    }
+
+    @Test
+    void naoDevePermitirConsultaSemRespeitarIntervaloAntesDeConsultaExistente() {
+        agendamentoService.criarAgendamento(
+                tenant.getId(),
+                profissional.getId(),
+                paciente.getId(),
+                inicioConsulta,
+                null
+        );
+
+        Instant horarioInsuficiente =
+                inicioConsulta.minusSeconds(
+                        DURACAO_CONSULTA_SEGUNDOS + 5 * 60L
+                );
+
+        assertThatThrownBy(() ->
+                agendamentoService.criarAgendamento(
+                        tenant.getId(),
+                        profissional.getId(),
+                        paciente.getId(),
+                        horarioInsuficiente,
+                        null
+                )
+        ).isInstanceOf(ConflitoAgendamentoException.class);
+    }
+
+    @Test
+    void devePermitirIntervaloExatamenteConfiguradoAntesEDepois() {
+        agendamentoService.criarAgendamento(
+                tenant.getId(),
+                profissional.getId(),
+                paciente.getId(),
+                inicioConsulta,
+                null
+        );
+
+        Instant consultaAnterior =
+                inicioConsulta.minusSeconds(
+                        PASSO_PADRAO_SEGUNDOS
+                );
+
+        Instant consultaPosterior =
+                inicioConsulta.plusSeconds(
+                        PASSO_PADRAO_SEGUNDOS
+                );
+
+        Agendamento anterior =
+                agendamentoService.criarAgendamento(
+                        tenant.getId(),
+                        profissional.getId(),
+                        paciente.getId(),
+                        consultaAnterior,
+                        null
+                );
+
+        Agendamento posterior =
+                agendamentoService.criarAgendamento(
+                        tenant.getId(),
+                        profissional.getId(),
+                        paciente.getId(),
+                        consultaPosterior,
+                        null
+                );
+
+        assertThat(anterior.getInicio())
+                .isEqualTo(consultaAnterior);
+
+        assertThat(posterior.getInicio())
+                .isEqualTo(consultaPosterior);
+    }
+
+    @Test
+    void devePermitirConsultasSemIntervaloQuandoConfiguradoComoZero() {
+        tenant.atualizarIntervaloEntreConsultasMinutos(0);
+
+        agendamentoService.criarAgendamento(
+                tenant.getId(),
+                profissional.getId(),
+                paciente.getId(),
+                inicioConsulta,
+                null
+        );
+
+        Instant proximaConsulta =
+                inicioConsulta.plusSeconds(
+                        DURACAO_CONSULTA_SEGUNDOS
+                );
 
         Agendamento segundoAgendamento =
                 agendamentoService.criarAgendamento(
@@ -229,7 +371,6 @@ class AgendamentoServiceTest {
 
     @Test
     void deveConfirmarCancelarEConcluirAgendamentos() {
-        // Primeiro agendamento: criar e confirmar.
         Agendamento primeiro =
                 agendamentoService.criarAgendamento(
                         tenant.getId(),
@@ -248,13 +389,20 @@ class AgendamentoServiceTest {
         assertThat(confirmado.getStatus())
                 .isEqualTo(Agendamento.Status.CONFIRMADO);
 
-        // Segundo agendamento: criar e cancelar.
+        /*
+         * A segunda consulta respeita o intervalo de 10 minutos.
+         */
+        Instant segundoHorario =
+                inicioConsulta.plusSeconds(
+                        PASSO_PADRAO_SEGUNDOS
+                );
+
         Agendamento segundo =
                 agendamentoService.criarAgendamento(
                         tenant.getId(),
                         profissional.getId(),
                         paciente.getId(),
-                        inicioConsulta.plusSeconds(50 * 60),
+                        segundoHorario,
                         null
                 );
 
@@ -267,15 +415,16 @@ class AgendamentoServiceTest {
         assertThat(cancelado.getStatus())
                 .isEqualTo(Agendamento.Status.CANCELADO);
 
-        // Terceiro agendamento: criar, confirmar e concluir.
-        // Começa 60 minutos após o início da primeira consulta.
-        // Assim, termina às 11h50, dentro da agenda das 9h às 12h.
+        /*
+         * O cancelamento libera o horário.
+         * O terceiro agendamento reutiliza o mesmo horário.
+         */
         Agendamento terceiro =
                 agendamentoService.criarAgendamento(
                         tenant.getId(),
                         profissional.getId(),
                         paciente.getId(),
-                        inicioConsulta.plusSeconds(60 * 60),
+                        segundoHorario,
                         null
                 );
 

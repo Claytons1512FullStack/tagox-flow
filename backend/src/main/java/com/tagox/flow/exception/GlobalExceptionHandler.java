@@ -11,16 +11,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleResourceNotFound(
             ResourceNotFoundException ex
     ) {
-
         Map<String, Object> body = new HashMap<>();
 
         body.put("timestamp", LocalDateTime.now());
@@ -28,19 +25,15 @@ public class GlobalExceptionHandler {
         body.put("error", "NOT_FOUND");
         body.put("message", ex.getMessage());
 
-
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(body);
     }
 
-
-
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicateResource(
             DuplicateResourceException ex
     ) {
-
         Map<String, Object> body = new HashMap<>();
 
         body.put("timestamp", LocalDateTime.now());
@@ -48,19 +41,31 @@ public class GlobalExceptionHandler {
         body.put("error", "CONFLICT");
         body.put("message", ex.getMessage());
 
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(body);
+    }
+
+    @ExceptionHandler(ConflitoAgendamentoException.class)
+    public ResponseEntity<Map<String, Object>> handleConflitoAgendamento(
+            ConflitoAgendamentoException ex
+    ) {
+        Map<String, Object> body = new HashMap<>();
+
+        body.put("timestamp", LocalDateTime.now());
+        body.put("status", HttpStatus.CONFLICT.value());
+        body.put("error", "CONFLICT");
+        body.put("message", ex.getMessage());
 
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(body);
     }
 
-
-
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Map<String, Object>> handleBusinessException(
             BusinessException ex
     ) {
-
         Map<String, Object> body = new HashMap<>();
 
         body.put("timestamp", LocalDateTime.now());
@@ -68,23 +73,16 @@ public class GlobalExceptionHandler {
         body.put("error", "BUSINESS_ERROR");
         body.put("message", ex.getMessage());
 
-
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(body);
     }
 
-
-
-
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationExceptions(
             MethodArgumentNotValidException ex
     ) {
-
-
         Map<String, String> errors = new HashMap<>();
-
 
         ex.getBindingResult()
                 .getFieldErrors()
@@ -95,7 +93,6 @@ public class GlobalExceptionHandler {
                         )
                 );
 
-
         Map<String, Object> body = new HashMap<>();
 
         body.put("timestamp", LocalDateTime.now());
@@ -103,21 +100,15 @@ public class GlobalExceptionHandler {
         body.put("error", "VALIDATION_ERROR");
         body.put("errors", errors);
 
-
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(body);
     }
 
-
-
-
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<Map<String, Object>> handleHttpMessageNotReadable(
             HttpMessageNotReadableException ex
     ) {
-
-
         Map<String, Object> body = new HashMap<>();
 
         body.put("timestamp", LocalDateTime.now());
@@ -128,10 +119,8 @@ public class GlobalExceptionHandler {
                 "O corpo da requisição contém dados mal formatados ou tipos inválidos."
         );
 
-
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
                 .body(body);
     }
-
 }

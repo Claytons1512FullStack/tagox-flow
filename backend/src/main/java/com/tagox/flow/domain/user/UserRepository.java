@@ -1,7 +1,9 @@
 package com.tagox.flow.domain.user;
 
 import com.tagox.flow.domain.role.RoleType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -19,6 +21,18 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     Optional<User> findByIdAndTenantId(
             UUID id,
             UUID tenantId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT u
+            FROM User u
+            WHERE u.id = :profissionalId
+            AND u.tenant.id = :tenantId
+            """)
+    Optional<User> findByIdAndTenantIdForUpdate(
+            @Param("profissionalId") UUID profissionalId,
+            @Param("tenantId") UUID tenantId
     );
 
     Optional<User> findByTenantIdAndEmail(
